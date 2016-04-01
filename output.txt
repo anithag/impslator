@@ -1,0 +1,5 @@
+enclave (0, 
+ while ( *l1 == 1 )  output *l2 to H   end  
+ )kill();
+ set(cnd)  ; 
+ output *l3 to L  
