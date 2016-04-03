@@ -7,7 +7,7 @@ type eid_cond = (var * int)
 type constr_cond = 
  | Modecond of mode_cond  (* Represents mu = 1 *)
  | Eidcond of eid_cond    (* Represents id = 0/1 *)
- | Cnfclause of constr_cond list  
+ | Dnfclause of constr_cond list  
 
 (* sets of pairs of types *)
 module Constr = Set.Make(struct
@@ -46,10 +46,7 @@ type modeenv = ModeProgSet.t
 
 type modeset = ModeSet.t
 
-type costvar =
-| Mode of mode
-| Eid  of var
-| Kvar of var
+type costvar = var
 
 (* Polynomial representation for cost function *)
 type polyterm =

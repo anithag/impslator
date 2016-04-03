@@ -84,17 +84,6 @@ stmt =
 (* typechecking environments - maps variables to types *)
 and context = labeltype VarLocMap.t
 
-(* values *)
-type value = 
-    VInt of int 
-  | VBool of bool 
-  | VFun of stmt 
-  | VLoc of int 
-
-
-(* evaluation environments *)
-type env = value VarLocMap.t
-
 (* Encalve Base types *)
 type encbasetype = 
     EBtInt                             (* int *)
@@ -116,7 +105,7 @@ type loctype = mode VarLocMap.t
 type encexp =
     EVar of var                       (* x *)
   | ELoc of mode * int 		     (* l^ mode *)
-  | ELam of mode * enccontext *killset * policy* cndset * enccontext*killset * policy* encstmt (* First mode|-lambda^mode(gpre,killpre, p,u, gpost, killpost)_q *)
+  | ELam of mode * enccontext *killset * policy* cndset * enccontext*killset * policy*encstmt (* First mode|-lambda^mode(gpre,killpre, p,u, gpost, killpost) *)
   | EConstant of int                  (* n *)
   | EPlus of encexp * encexp          (* e1 + e2 *)
   | EModulo of encexp * encexp        (* e1 % e2 *)

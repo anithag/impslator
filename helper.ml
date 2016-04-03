@@ -1,9 +1,16 @@
 open Ast
+open Proplogic
 
 exception HelperError of string
 
 
 let number_of_enclaves = 10
+
+
+let get_mode = function
+| EBtRef(mu', lt), p -> mu'
+| EBtFunc(mu', _,_,p,u,_,_), q -> mu'
+| _, q ->raise (HelperError "Type has no mode") 
 
 let get_mode_var = function
 |ModeVar(mu1, l) -> mu1
@@ -34,6 +41,10 @@ let get_src_postcontext (t:labeltype) =
    match t with
    |BtFunc(gpre,p,u, gpost), q -> gpost
    |_ -> raise (HelperError "")
+
+let invert_encfunctype = function
+  |EBtFunc(m, gencpre, kpre, p, u, gencpost, kpost), q -> (m, gencpre, kpre, p, u, gencpost, kpost)
+  | _,q -> raise (HelperError "Expecting function type")
 
 (* Check if base types are same. Ignore policy for comparison 
 *)
@@ -87,7 +98,6 @@ let rec check_enc_base_type b1 b2 = match (b1, b2) with
   | EBtBool, EBtBool -> true
   | EBtCond rho1, EBtCond rho2 -> true
   | _ ,_ -> false (* int, bool, cond *)
-
 (* ---------- FRESH TYPE VARIABLES ---------- *)
 let tvar_cell = ref 1
 
@@ -135,4 +145,14 @@ let check_typing_context_reg_low (genc1:enccontext) =
 					   end
 				| _ -> true
 				end) genc1
+
+let rec countCondConstraints (c:constr2) =
+	  let rec outerloop c2 num_constraints =
+          	let a, b = Constr2.choose c2 in
+          	let c2' = Constr2.remove (a,b) c2 in
+	   	let constraints_per_row = 1  in
+		let totalconstraints = constraints_per_row + num_constraints in
+                if (Constr2.is_empty c2') then totalconstraints else outerloop c2' totalconstraints 
+         in
+         if (Constr2.is_empty c) then 0 else outerloop c 0
 

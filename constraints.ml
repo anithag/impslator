@@ -267,7 +267,33 @@ let get_translated_exp_gamma = function
 | TExp(_,e,_,_, g, _,ee, _) -> g
 | _  -> raise (TranslationError "Expected expression judgment")
 
-(*
+let get_translated_exp_delta = function
+| TExp(_,e,_,_, g, delta,ee, enctype) -> delta
+| _  -> raise (TranslationError "Expected expression judgment")
+
+
+let get_translated_exp_type = function
+| TExp(_,e,_,_, g, _,ee, enctype) -> enctype
+| _  -> raise (TranslationError "Expected expression judgment")
+
+let  rec get_translated_seq_stmt tstmt = 
+  let tstmtlist = begin match tstmt with
+		|TSeq(pc, srcgamma,setu,srcgamma', s,mu,gamma, k, delta, tstmtlist, gamma', k') -> tstmtlist
+		| _   -> raise (TranslationError "Expected Seq translation")
+		end in
+  let rec loop  estmtlist tstmtlist = begin match tstmtlist with
+	| [] -> estmtlist
+	| TAtomicStmt(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k')::tail -> loop (estmtlist@[encs]) tail
+	| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k')::tail -> let enctruestmt = (get_translated_seq_stmt ttrue) in
+											      	      let encfalsestmt = (get_translated_seq_stmt tfalse) in	
+											      	      loop (estmtlist@[EIf(encexp, enctruestmt, encfalsestmt)]) tail 
+	| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k')::tail -> let encbody = (get_translated_seq_stmt tbody) in
+												loop (estmtlist@[EWhile(encexp, encbody)]) tail
+	| _::tail -> raise (TranslationError "Expected statement judgment")
+ end in 
+let estmtlist = loop [] tstmtlist in
+(EESeq estmtlist)
+
 let get_translated_stmt = function
 | TAtomicStmt(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k') -> encs
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> let enctruestmt = get_translated_seq_stmt ttrue in
@@ -276,7 +302,12 @@ let get_translated_stmt = function
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> let encbody = get_translated_seq_stmt tbody in
 												EWhile(encexp, encbody)
 | _ -> raise (TranslationError "Expected statement judgment")
-*)
+
+let get_translated_stmt_delta = function
+| TAtomicStmt(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k') -> delta
+| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> delta
+| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> delta
+| _ -> raise (TranslationError "Expected statement judgment")
 
 let get_translated_stmt_src_postgamma = function
 | TAtomicStmt(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k') -> srcgamma'
@@ -301,7 +332,7 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 		 let c1, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
 		 let ence = get_translated_exp texp in
 		 let gammatmp = get_translated_exp_gamma texp in
-		 let enclt = get_enc_exp_type gammatmp ence in
+		 let enclt = get_translated_exp_type texp in
 		 let varlabtype = join (pc, (get_enc_exp_label enclt)) in
 		 let encs =  EAssign (v, ence) in 
 		 (* update gamma *)
@@ -366,10 +397,102 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 
 and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with 
    | Var x     ->  
-		    let enctype = translatetype srctype in
-		    let gamma' = if (VarLocMap.mem (Reg x) gamma) then gamma
-		    		else
-				  VarLocMap.add (Reg x) enctype gamma in 
+		    let (enctype, gamma') = if (VarLocMap.mem (Reg x) gamma) then 
+		    				( VarLocMap.find (Reg x) gamma, gamma) 
+		    			else
+						let enctype = translatetype srctype in
+				  		(enctype, VarLocMap.add (Reg x) enctype gamma)
+				 in 
+		    let mu' = get_mode enctype in
 		    let ence = EVar x in
 		    let texp = TExp(srcgamma,e,srctype, mu,gamma',delta,ence,enctype) in
 		    (TConstraints.empty, texp)
+  | Constant n   -> 
+		  let enctype = translatetype srctype in
+		  let ence = EConstant n in
+		  let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
+		   (TConstraints.empty, texp)
+  | Loc l        -> 
+		    let (enctype, gamma') = if (VarLocMap.mem (Mem l) gamma) then 
+		    				(VarLocMap.find (Mem l) gamma, gamma)
+		    		else
+						let enctype = translatetype srctype in
+				  		(enctype, VarLocMap.add (Mem l) enctype gamma)
+				 in 
+		    let mu' = get_mode enctype in
+		    let delta' = VarLocMap.add (Mem l) mu' delta in 
+		    let ence = ELoc(mu', l) in
+		    let texp = TExp(srcgamma,e,srctype, mu,gamma',delta',ence,enctype) in
+		    (TConstraints.empty, texp)
+ | Deref e'     ->
+		 let b = get_exp_type srcgamma e' in 
+		 let c1, texp = gen_constraints_exp srcgamma e' b mu gamma delta  in
+
+		 (* Translate e' *)
+		 let ence' = get_translated_exp texp in
+		 let gamma' = get_translated_exp_gamma texp in
+		 let delta' = get_translated_exp_delta texp in
+		 let enclt = get_translated_exp_type texp in
+		 let mu' = get_mode enclt  in
+		
+		 (* μ' != N -> μ = μ' *)
+		 let c2 = TConstraints.add (ModenotNimpliesEq(mu', mu)) c1 in
+		 let ence = (EDeref ence') in
+		 let enctype = get_enc_exp_type gamma' ence in 
+
+		 let texp = TExp(srcgamma,e,srctype, mu,gamma',delta',ence,enctype) in
+		  (c2, texp)
+ | Isunset x ->
+		    (* srctype is (cond ref, low) *)
+		    let (enctype, gamma') = if (VarLocMap.mem (Reg x) gamma) then 
+		    				(VarLocMap.find (Reg x) gamma, gamma) 
+		    		else
+						let enctype = translatetype srctype in
+				  		(enctype, VarLocMap.add (Reg x) enctype gamma)
+				 in 
+		    let mu' = get_mode enctype in
+		    let delta' = VarLocMap.add (Reg x) mu' delta in
+		    let ence = EIsunset x in
+		    let texp = TExp(srcgamma,e,srctype, mu,gamma',delta',ence,enctype) in
+
+		    let c1 = TConstraints.add (ModenotNimpliesEq(mu', mu)) TConstraints.empty in
+		    (c1, texp)
+ | Lam(gpre, p, u, gpost,q, s) -> 
+		    let enctype = translatetype srctype in
+		    let (m', gencpre, kpre, p, u, gencpost, kpost) = invert_encfunctype enctype in
+		    let  c1, tstmt = gen_constraints_stmt p gpre u s m' gencpre kpre delta in
+		    let estmt   = get_translated_stmt tstmt in
+		    let delta' = get_translated_stmt_delta tstmt in
+		    let ence =	ELam(m', gencpre, kpre, p, u, gencpost, kpost, q, estmt) in
+		    let texp = TExp(srcgamma,e,srctype, mu,gamma,delta',ence,enctype) in
+
+		    let c2 = TConstraints.add (ModeEqual(mu,m')) c1 in
+		    let allreglow = check_typing_context_reg_low gencpost in
+		    let c3 = if (not allreglow) then
+				(TConstraints.add (ModeisN(m',1)) c2)
+			     else
+				c2
+		    in (c3, texp)
+
+and gen_constraints_type (s1: enclabeltype) (s2:enclabeltype) = 
+   match (s1, s2) with
+   |(EBtRef(m1,s1'), p), (EBtRef( m2, s2'), q) -> let t1 = gen_constraints_type s1' s2' in  [(m1, m2)]@t1 
+							(* FIXME: equate gencpre1 and gencpre2; likewise equate gencpost1 and gencpost2 *)
+   |(EBtFunc(m1, gencpre1,kpre1, p1, u1, gencpost1, kpost1), q1), (EBtFunc(m2, gencpre2, kpre2, p2, u2, gencpost2, kpost2), q2) -> 
+						let rec gen_constraints_type_for_context genc1 genc2 c =
+							let c' = if (not (VarLocMap.is_empty genc1)) && (not (VarLocMap.is_empty genc2)) then
+									let (key, value1) = VarLocMap.choose genc1 in
+									let value2 = (try VarLocMap.find key genc2 with Not_found -> 
+										raise (TranslationError " Error in generating type constraints for functions ")) in
+									let c' = gen_constraints_type value1 value2 in
+									let genc1', genc2' = (VarLocMap.remove key genc1, VarLocMap.remove key genc2) in
+									gen_constraints_type_for_context genc1' genc2' c@c'
+								else
+									c
+							in c'
+						in  
+						let c1 = gen_constraints_type_for_context gencpre1 gencpre2 [(m1, m2)] in
+						let c2 = gen_constraints_type_for_context gencpost1 gencpost2 c1 in
+						c2
+   | _ -> []
+     

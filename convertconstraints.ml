@@ -30,10 +30,10 @@ let rec convertconstr c1 c2 = function
 					let eidlst2 = get_mode_eidlist muvar2 in 
 					let rec loop c2 = function
 					  |[], [] -> c2
-					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Cnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
-									let c2'' = Constr2.add  (Cnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
-									let c3 = Constr2.add  (Cnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
-									let c3' = Constr2.add  (Cnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3' in 
+					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
+									let c2'' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
+									let c3 = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
+									let c3' = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3' in 
 									
 									loop c3' (tail1, tail2)
 					in 
@@ -49,7 +49,7 @@ let rec convertconstr c1 c2 = function
 					let eidlst = get_mode_eidlist muvar in
 					let rec loop c2 = function
 					  |[], [] -> c2
-					  |xs1::tail, xs2::ktail -> let c2' = Constr2.add  (Cnfclause ([Modecond(mu,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 0)) c2 in 
+					  |xs1::tail, xs2::ktail -> let c2' = Constr2.add  (Dnfclause ([Modecond(mu,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 0)) c2 in 
 									loop c2' (tail, ktail)
 					in 
 					let c3 = loop c2  (eidlst, k) in
@@ -71,10 +71,10 @@ let rec convertconstr c1 c2 = function
 					let eidlst2 = get_mode_eidlist muvar2 in 
 					let rec loop c2 = function
 					  |[], [] -> c2
-					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Cnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
-									let c2'' = Constr2.add  (Cnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
-									let c3 = Constr2.add  (Cnfclause ([Modecond(mu1,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
-									let c3' = Constr2.add  (Cnfclause ([Modecond(mu1,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3 in 
+					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
+									let c2'' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
+									let c3 = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
+									let c3' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3 in 
 
 									loop c3' (tail1, tail2)
 					in 
@@ -101,8 +101,8 @@ let rec convertconstr c1 c2 = function
 					let rec loop c2 = function
 					  |[], [], [] -> c2
 					  | xs1::tail1, xs2::tail2, xs3::tail3 -> 
-								let c2' = Constr2.add  (Cnfclause ([Eidcond(xs2,0)]@[Eidcond(xs3, 0)]), Eidcond(xs1, 0)) c2 in 
-								let c2'' = Constr2.add  (Eidcond(xs1, 0), Cnfclause ([Eidcond(xs2,0)]@[Eidcond(xs3, 0)])) c2' in 
+								let c2' = Constr2.add  (Dnfclause ([Eidcond(xs2,0)]@[Eidcond(xs3, 0)]), Eidcond(xs1, 0)) c2 in 
+								let c2'' = Constr2.add  (Eidcond(xs1, 0), Dnfclause ([Eidcond(xs2,0)]@[Eidcond(xs3, 0)])) c2' in 
 									loop c2'' (tail1, tail2, tail3)
 					in 
 					let c3 = loop c2  (k1, k2, k3) in
@@ -142,10 +142,10 @@ let rec convertconstr c1 c2 = function
 					let eidlst2 = get_mode_eidlist muvar2 in 
 					let rec loop c2 = function
 					  |[], [] -> c2
-					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Cnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
-									let c2'' = Constr2.add  (Cnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
-									let c3 = Constr2.add  (Cnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
-									let c3' = Constr2.add  (Cnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3' in 
+					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
+									let c2'' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
+									let c3 = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
+									let c3' = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3' in 
 									
 									loop c3' (tail1, tail2)
 					in 
@@ -180,3 +180,12 @@ let rec convertconstr c1 c2 = function
 					in 
 					let c3 = loop c2  (k1, k2) in
 					(c1, c3)
+
+let rec convertconstraints c1 c2 tconstrset =
+    if (TConstraints.is_empty tconstrset) then
+			(c1, c2)
+    else
+	let tconstr = TConstraints.choose tconstrset in
+	let c3, c4 = convertconstr c1 c2 tconstr in
+	convertconstraints c3 c4  (TConstraints.remove tconstr tconstrset)
+
