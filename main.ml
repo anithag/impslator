@@ -6,6 +6,7 @@ open Convertconstraints
 open Pprint
 open Printf
 open Util
+open Translate
 
 
 exception MainError
@@ -52,4 +53,6 @@ let () =
   let _ = Printf.printf "%s" out in
 
   let model = Util.extractsatmodel out in
+  let oc = open_out "output.txt" in
+  let _ = Translate.printEncProgram oc (model, false, tstmt) in
    ()

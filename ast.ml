@@ -105,7 +105,7 @@ type loctype = mode VarLocMap.t
 type encexp =
     EVar of var                       (* x *)
   | ELoc of mode * int 		     (* l^ mode *)
-  | ELam of mode * enccontext *killset * policy* cndset * enccontext*killset * policy*encstmt (* First mode|-lambda^mode(gpre,killpre, p,u, gpost, killpost) *)
+  | ELam of mode * enccontext *killset * policy* cndset * enccontext*killset * policy*encstmt (* First mode|-lambda^mode(gpre,killpre, p,u, gpost, killpost, q, s) *)
   | EConstant of int                  (* n *)
   | EPlus of encexp * encexp          (* e1 + e2 *)
   | EModulo of encexp * encexp        (* e1 % e2 *)
@@ -135,11 +135,20 @@ type program = context * stmt
 
 (* Translation Judgment *)
 type translate = 
-|TAtomicStmt of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encstmt * enccontext * killset
+|TSkip of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encstmt * enccontext * killset
+|TAssign  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * var * translateexp * enccontext * killset
+|TDeclassify of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * var * translateexp * enccontext * killset
+|TUpdate of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * translateexp * translateexp * enccontext * killset
+|TOut of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * channel* translateexp* enccontext * killset
+|TSetcnd of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * var * enccontext * killset
 |TSeq of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * (translate list)* enccontext * killset
 |TIf  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encexp * translate * translate * enccontext * killset
 |TWhile  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encexp * translate * enccontext * killset
+|TCall  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * translateexp * enccontext * killset
+
+and translateexp = 
 |TExp of  context * exp * labeltype * mode * enccontext * loctype * encexp * enclabeltype
+|TLamExp of  context * exp * labeltype * mode * enccontext * loctype * translate* enclabeltype
 
 (* Constraint Language *)
 type tconstraint =

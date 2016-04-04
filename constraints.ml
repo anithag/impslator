@@ -107,6 +107,24 @@ let rec translatetype (s:labeltype) : enclabeltype =
 			let gencpost = (VarLocMap.map (fun a -> translatetype a) gpost) in
 			 (EBtFunc(mu, gencpre, kpre, p, u, gencpost, kpost), q)
 	    
+let rec get_src_exp_type (g:context) (e:exp) : labeltype =
+  match e with
+   | Var x -> (try VarLocMap.find (Reg x) g with Not_found -> raise TypeNotFoundError)
+   | Loc l -> (try VarLocMap.find (Mem l) g with Not_found -> raise TypeNotFoundError)
+   | Lam(gpre, p,u, gpost,q, s) -> (BtFunc(gpre, p,u, gpost), q)
+   | Constant n -> (BtInt, Low)
+   | True    -> (BtBool, Low)
+   | False -> (BtBool, Low)
+   | Eq(e1, e2)
+   | Neq(e1, e2) -> (BtBool, join (snd (get_exp_type g e1), snd (get_exp_type g e2)))
+   | Plus(e1, e2) 
+   | Modulo(e1, e2) -> (BtInt, join (snd (get_exp_type g e1), snd (get_exp_type g e2)))
+   | Isunset x -> (BtBool, Low)
+   | Deref e1   -> begin match (get_exp_type g e1) with
+		  | ((BtRef lt), p) -> (fst lt, join ((snd lt), p))
+		  | _  -> raise TypeError
+		 end
+ 
 let rec get_enc_exp_type (genc:enccontext) (e:encexp) : enclabeltype =
   match e with
    | EVar x  -> (try VarLocMap.find (Reg x) genc with Not_found -> raise TypeNotFoundError)
@@ -258,23 +276,106 @@ let rec enc_flow_sensitive_type_infer (pc:policy) (genc:enccontext) = function
     |EOutput(x, e) -> genc
     | _  -> raise (UnimplementedError "Enclave flow sensitive typing not implemented for this statement")
 
+let get_translated_stmt_delta = function
+| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> delta
+| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, _, gamma', k') -> delta
+| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> delta
+| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  delta
 
-let get_translated_exp = function
-| TExp(_,e,_,_, g, _,ee, _) -> ee
-| _  -> raise (TranslationError "Expected expression judgment")
- 
+let get_translated_stmt_src_postgamma = function
+| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> srcgamma'
+| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> srcgamma'
+| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> srcgamma'
+| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  srcgamma'
+
+let get_translated_stmt_enc_pregamma = function
+| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> gamma
+| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> gamma
+| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> gamma
+| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  gamma
+
+let get_translated_stmt_enc_postgamma = function
+| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> gamma'
+| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> gamma'
+| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> gamma'
+| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  gamma'
+
+let get_translated_stmt_enc_prekillset = function
+| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> k
+| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> k
+| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> k
+
+let get_translated_stmt_enc_postkillset = function
+| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> k'
+| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> k'
+| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> k'
+| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  k'
+
+let get_translated_stmt_mode = function
+| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, _, gamma', k') 
+| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') 
+| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _,  gamma', k')-> mu
+
+let get_translated_stmt_postcontext = function
+| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')
+| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, _, gamma', k') 
+| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') 
+| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _,  gamma', k')-> (pc, setu, mu, gamma, k, delta, gamma', k')
+
 let get_translated_exp_gamma = function
-| TExp(_,e,_,_, g, _,ee, _) -> g
-| _  -> raise (TranslationError "Expected expression judgment")
+| TExp(_,e,_,_, g, _,_, _) 
+| TLamExp(_,e,_,_, g, _,_, _) -> g
 
 let get_translated_exp_delta = function
-| TExp(_,e,_,_, g, delta,ee, enctype) -> delta
-| _  -> raise (TranslationError "Expected expression judgment")
+| TExp(_,e,_,_, g, delta,_, enctype) 
+| TLamExp(_,e,_,_, g, delta,_, enctype) -> delta
 
 
 let get_translated_exp_type = function
-| TExp(_,e,_,_, g, _,ee, enctype) -> enctype
-| _  -> raise (TranslationError "Expected expression judgment")
+| TExp(_,e,_,_, g, _,_, enctype)
+| TLamExp(_,e,_,_, g, _,_, enctype) -> enctype
+
 
 let  rec get_translated_seq_stmt tstmt = 
   let tstmtlist = begin match tstmt with
@@ -283,62 +384,56 @@ let  rec get_translated_seq_stmt tstmt =
 		end in
   let rec loop  estmtlist tstmtlist = begin match tstmtlist with
 	| [] -> estmtlist
-	| TAtomicStmt(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k')::tail -> loop (estmtlist@[encs]) tail
+	| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k')::tail -> loop (estmtlist@[encs]) tail
+	| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, cnd, gamma', k')::tail -> loop (estmtlist@[ESet(cnd)]) tail
+	| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, x, texp, gamma', k')::tail -> loop (estmtlist@[EAssign (x, (get_translated_exp texp))]) tail
+	| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, x, texp, gamma', k')::tail -> loop (estmtlist@[EDeclassify (x, (get_translated_exp texp))]) tail
+	| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp1, texp2, gamma', k')::tail -> loop (estmtlist@[EUpdate ((get_translated_exp texp1), (get_translated_exp texp2))]) tail
+	| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ch, texp, gamma', k')::tail -> loop (estmtlist@[EOutput(ch, (get_translated_exp texp))]) tail
 	| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k')::tail -> let enctruestmt = (get_translated_seq_stmt ttrue) in
 											      	      let encfalsestmt = (get_translated_seq_stmt tfalse) in	
 											      	      loop (estmtlist@[EIf(encexp, enctruestmt, encfalsestmt)]) tail 
 	| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k')::tail -> let encbody = (get_translated_seq_stmt tbody) in
-												loop (estmtlist@[EWhile(encexp, encbody)]) tail
-	| _::tail -> raise (TranslationError "Expected statement judgment")
+												loop (estmtlist@[EWhile (encexp, encbody)]) tail
+	| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')::tail -> 
+												loop (estmtlist@[ECall(get_translated_exp tlamexp)]) tail
  end in 
 let estmtlist = loop [] tstmtlist in
 (EESeq estmtlist)
 
-let get_translated_stmt = function
-| TAtomicStmt(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k') -> encs
+and get_translated_stmt = function
+| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k')-> encs
+| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, cnd, gamma', k')-> ESet(cnd)
+| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, x, texp, gamma', k')-> EAssign (x, (get_translated_exp texp))
+| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, x, texp, gamma', k')-> EDeclassify (x, (get_translated_exp texp))
+| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp1, texp2, gamma', k')-> EUpdate((get_translated_exp texp1), (get_translated_exp texp2))
+| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ch, texp, gamma', k')-> EOutput(ch, (get_translated_exp texp))
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> let enctruestmt = get_translated_seq_stmt ttrue in
 											      let encfalsestmt = get_translated_seq_stmt tfalse in	
 											      EIf(encexp, enctruestmt, encfalsestmt) 
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> let encbody = get_translated_seq_stmt tbody in
 												EWhile(encexp, encbody)
-| _ -> raise (TranslationError "Expected statement judgment")
+| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')-> ECall(get_translated_exp tlamexp)
 
-let get_translated_stmt_delta = function
-| TAtomicStmt(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k') -> delta
-| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> delta
-| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> delta
-| _ -> raise (TranslationError "Expected statement judgment")
-
-let get_translated_stmt_src_postgamma = function
-| TAtomicStmt(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k') -> srcgamma'
-| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> srcgamma'
-| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> srcgamma'
-| _ -> raise (TranslationError "Expected statement judgment")
-
-let get_translated_stmt_enc_postgamma = function
-| TAtomicStmt(pc, srcgamma,setu,srcgamma',mu,s,gamma, k, delta, encs, gamma', k') -> gamma'
-| TIf(pc, srcgamma,setu,srcgamma',mu,s,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> gamma'
-| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> gamma'
-| _ -> raise (TranslationError "Expected statement judgment")
-
-let get_translated_stmt_enc_postkillset = function
-| TAtomicStmt(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k') -> k'
-| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> k'
-| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> k'
-| _ -> raise (TranslationError "Expected statement judgment")
-
+and get_translated_exp = function
+| TExp(_,e,_,_, g, _,ee, _) -> ee
+| TLamExp(_,e,_,_, g, _,tstmt, _) -> let encs = get_translated_seq_stmt tstmt in
+				     let (pc, setu, mu, gamma, k, delta, gamma', k') = get_translated_stmt_postcontext tstmt in
+				     let q = Low in
+				     ELam(mu, gamma,k, pc, setu, gamma', k', q, encs)   
+ 
 let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
  | Assign (v,e) -> let b = get_exp_type srcgamma e in 
 		 let c1, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
-		 let ence = get_translated_exp texp in
 		 let gammatmp = get_translated_exp_gamma texp in
 		 let enclt = get_translated_exp_type texp in
 		 let varlabtype = join (pc, (get_enc_exp_label enclt)) in
+		 let ence = get_translated_exp texp in
 		 let encs =  EAssign (v, ence) in 
 		 (* update gamma *)
 		 let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
 		 let gamma' =  enc_flow_sensitive_type_infer pc gammatmp encs in
-		 let tstmt = TAtomicStmt(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encs, gamma', k) in
+		 let tstmt = TAssign(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, v, texp, gamma', k) in
 		 (c1, tstmt)
  |Seq(s1, s2)  -> let seqlist = flattenseq s in
 			let rec seqloop c1 mui g genc ki tstmtlist = function
@@ -461,10 +556,8 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		    let enctype = translatetype srctype in
 		    let (m', gencpre, kpre, p, u, gencpost, kpost) = invert_encfunctype enctype in
 		    let  c1, tstmt = gen_constraints_stmt p gpre u s m' gencpre kpre delta in
-		    let estmt   = get_translated_stmt tstmt in
 		    let delta' = get_translated_stmt_delta tstmt in
-		    let ence =	ELam(m', gencpre, kpre, p, u, gencpost, kpost, q, estmt) in
-		    let texp = TExp(srcgamma,e,srctype, mu,gamma,delta',ence,enctype) in
+		    let texp = TLamExp(srcgamma,e,srctype, mu,gamma,delta',tstmt,enctype) in
 
 		    let c2 = TConstraints.add (ModeEqual(mu,m')) c1 in
 		    let allreglow = check_typing_context_reg_low gencpost in
