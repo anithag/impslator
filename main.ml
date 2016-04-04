@@ -7,6 +7,7 @@ open Pprint
 open Printf
 open Util
 open Translate
+open Optimize
 
 
 exception MainError
@@ -30,14 +31,23 @@ let () =
   let k = gen_killset () in
 
   (* HACK: let delta be VarLocMap instead of LocMap for quick hack *)
-  let c, tstmt = (Constraints.gen_constraints_stmt Low gammasrc VarSet.empty stmt mu0 VarLocMap.empty k VarLocMap.empty) in
- 
+  let (c0, delta, genc) = (Constraints.translategamma gammasrc) in
+  let c, tstmt = (Constraints.gen_constraints_stmt Low gammasrc VarSet.empty stmt mu0 genc k delta) in
+
+  let c = TConstraints.union c c0  in
+
+  (* μ0 = N *)
+  let c' = TConstraints.add (ModeisN (mu0,0)) c in
+
+  (* k = Ø *)
+  let c'' = TConstraints.add (Killempty k) c' in
+
   (* Convert translation constraints into proposition logic *)
-  let (c1, c2) = Convertconstraints.convertconstraints (Constr.empty) (Constr2.empty) c in
+  let (c1, c2) = Convertconstraints.convertconstraints (Constr.empty) (Constr2.empty) c'' in
   
   (* No optimization for now *)
   let mu0var = get_mode_var mu0 in
-  let totalc = 	PPlus (PMonoterm (0, (Mono mu0var)), PMonoterm (0, (Mono mu0var))) in 
+  let totalc = 	gen_tcb_objective (PMonoterm (0, (Mono mu0var))) tstmt in
 
   let condconstr_num = Helper.countCondConstraints c2 in
   let _ = Pprint.printCost totalc ((Constr.cardinal c1) + condconstr_num) in
@@ -48,8 +58,8 @@ let () =
   
   let _ = Format.printf "Calling Solver \n" in
   (* Call Solver and get output *) 
-  (* let out= (read_process "java -jar /Users/anithagollamudi/research/solvers/sat4j/sat4j-pb.jar min.opb" ) in  *)
-  let out= (read_process "/Users/anithagollamudi/research/solvers/toysolver-master/dist/build/toysat/toysat --pb min.opb") in
+   (* let out= (read_process "java -jar /Users/anithagollamudi/research/solvers/sat4j/sat4j-pb.jar min.opb" ) in *) 
+  let out= (read_process "/Users/anithagollamudi/research/solvers/toysolver-master/dist/build/toysat/toysat --pb min.opb") in 
   let _ = Printf.printf "%s" out in
 
   let model = Util.extractsatmodel out in

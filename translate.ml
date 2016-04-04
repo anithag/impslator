@@ -39,7 +39,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
 								Printf.fprintf oc "skip;\n" 
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-								Printf.fprintf oc "enclave(_, \n, skip;\n " 
+								Printf.fprintf oc "enclave(_, \n skip;\n " 
 							in
 						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
 						loop isoutermodeenc iscurmodeenc tail
@@ -49,7 +49,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
 								Printf.fprintf oc "set(%s);\n" cnd 
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-								Printf.fprintf oc "enclave(_, \n, set(%s);\n" cnd 
+								Printf.fprintf oc "enclave(_, \n set(%s);\n" cnd 
 							in
 						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
 						loop isoutermodeenc iscurmodeenc tail
@@ -59,7 +59,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
 								Printf.fprintf oc "%s:= %a;\n" x  printEncExp (model, texp) 
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-								Printf.fprintf oc "enclave(_, \n, %s:= %a;\n" x printEncExp (model, texp)  
+								Printf.fprintf oc "enclave(_, \n %s:= %a;\n" x printEncExp (model, texp)  
 							in
 						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
 						loop isoutermodeenc iscurmodeenc tail
@@ -68,7 +68,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
 								Printf.fprintf oc "%s:= declassify(%a);\n" x  printEncExp (model, texp) 
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-								Printf.fprintf oc "enclave(_, \n, %s:= declassify(%a);\n" x printEncExp (model, texp)  
+								Printf.fprintf oc "enclave(_, \n %s:= declassify(%a);\n" x printEncExp (model, texp)  
 							in
 						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
 						loop isoutermodeenc iscurmodeenc tail
@@ -77,7 +77,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
 								Printf.fprintf oc "%a <- %a ;\n" printEncExp (model, texp1)  printEncExp (model, texp2) 
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-								Printf.fprintf oc "enclave(_, \n, %a <- %a;\n" printEncExp (model, texp1) printEncExp (model, texp2)  
+								Printf.fprintf oc "enclave(_, \n %a <- %a;\n" printEncExp (model, texp1) printEncExp (model, texp2)  
 							in
 						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
 						loop isoutermodeenc iscurmodeenc tail
@@ -86,7 +86,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
 								Printf.fprintf oc "Output %a to _ ;\n" printEncExp (model, texp)
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-								Printf.fprintf oc "enclave(_, \n, Output %a to _;\n" printEncExp (model, texp)
+								Printf.fprintf oc "enclave(_, \n Output %a to _;\n" printEncExp (model, texp)
 							in
 						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
 						loop isoutermodeenc iscurmodeenc tail
@@ -113,7 +113,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
 								Printf.fprintf oc "call(%a);\n" printEncExp (model, texp)
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-								Printf.fprintf oc "enclave(_, \n, call(%a);\n" printEncExp (model, texp)
+								Printf.fprintf oc "enclave(_, \n call(%a);\n" printEncExp (model, texp)
 							in
 						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
 						loop isoutermodeenc iscurmodeenc tail
@@ -127,38 +127,38 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 		if (isoutermodeenc)|| (not iscurmodeenc) then
 				Printf.fprintf oc "skip\n" 
 		else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-				Printf.fprintf oc "enclave(_, \n, skip)\n " 
+				Printf.fprintf oc "enclave(_, \n skip)\n " 
 | TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, cnd, gamma', k')->
 			let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 			if (isoutermodeenc)|| (not iscurmodeenc) then
 				Printf.fprintf oc "set(%s)\n" cnd 
 			else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-				Printf.fprintf oc "enclave(_, \n, set(%s))\n" cnd 
+				Printf.fprintf oc "enclave(_, \n set(%s))\n" cnd 
 
 | TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, x, texp, gamma', k')->
 			let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 			if (isoutermodeenc)|| (not iscurmodeenc) then
 				Printf.fprintf oc "%s:= %a\n" x  printEncExp (model, texp) 
 			else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-				Printf.fprintf oc "enclave(_, \n, %s:= %a)\n" x printEncExp (model, texp)  
+				Printf.fprintf oc "enclave(_, \n %s:= %a)\n" x printEncExp (model, texp)  
 | TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, x, texp, gamma', k')->
 			let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 			if (isoutermodeenc)|| (not iscurmodeenc) then
 				Printf.fprintf oc "%s:= declassify(%a)\n" x  printEncExp (model, texp) 
 			else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-				Printf.fprintf oc "enclave(_, \n, %s:= declassify(%a))\n" x printEncExp (model, texp)  
+				Printf.fprintf oc "enclave(_, \n %s:= declassify(%a))\n" x printEncExp (model, texp)  
 | TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp1, texp2, gamma', k')->
 			let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 			if (isoutermodeenc)|| (not iscurmodeenc) then
 				Printf.fprintf oc "%a <- %a \n" printEncExp (model, texp1)  printEncExp (model, texp2) 
 			else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-				Printf.fprintf oc "enclave(_, \n, %a <- %a)\n" printEncExp (model, texp1) printEncExp (model, texp2)  
+				Printf.fprintf oc "enclave(_, \n %a <- %a)\n" printEncExp (model, texp1) printEncExp (model, texp2)  
 | TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ch, texp, gamma', k')->
 			let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 			if (isoutermodeenc)|| (not iscurmodeenc) then
 				Printf.fprintf oc "Output %a to _ \n" printEncExp (model, texp)
 			else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-				Printf.fprintf oc "enclave(_, \n, Output %a to _)\n" printEncExp (model, texp)
+				Printf.fprintf oc "enclave(_, \n Output %a to _)\n" printEncExp (model, texp)
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k')-> 
 			let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 			if (isoutermodeenc)|| (not iscurmodeenc) then
@@ -176,7 +176,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 			if (isoutermodeenc)|| (not iscurmodeenc) then
 				Printf.fprintf oc "call(%a)\n" printEncExp (model, texp)
 			else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
-				Printf.fprintf oc "enclave(_, \n, call(%a))\n" printEncExp (model, texp)
+				Printf.fprintf oc "enclave(_, \n call(%a))\n" printEncExp (model, texp)
 
 and printEncExp oc (model, texp) = match texp with
 |TExp(srcgamma,e,srctype, mu,gamma',delta,ence,enctype) -> printeexp oc (model, ence)

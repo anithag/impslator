@@ -162,6 +162,7 @@ type tconstraint =
 | EnclaveExitimpliesModeEq of mode * mode 	(* ~isVarLowContext -> μi = N ∨ μi = μi+1 *)
 | EnclaveExitimpliesKill   of mode * killset 	(* ~isVarLowContext -> μi = N ∨ K'' = Ø *)
 | KillEq  of killset * killset 			(* K1 = K2 *) 
+| Killempty of killset 				(* K = Ø *)
 
 
 module TConstraints = Set.Make (struct 

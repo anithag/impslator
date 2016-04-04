@@ -1,2 +1,2 @@
-y1:int_high; l1:int_high ref_low
- y1:= (*l1) ; y1:= 0
+y1:int_high; l1:int_high ref_low; z:int_low
+ y1:= (*l1) ; y1:= 0; z := 1

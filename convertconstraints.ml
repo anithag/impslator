@@ -33,7 +33,7 @@ let rec convertconstr c1 c2 = function
 					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
 									let c2'' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
 									let c3 = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
-									let c3' = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3' in 
+									let c3' = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3 in 
 									
 									loop c3' (tail1, tail2)
 					in 
@@ -145,7 +145,7 @@ let rec convertconstr c1 c2 = function
 					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
 									let c2'' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
 									let c3 = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
-									let c3' = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3' in 
+									let c3' = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3 in 
 									
 									loop c3' (tail1, tail2)
 					in 
@@ -154,8 +154,8 @@ let rec convertconstr c1 c2 = function
 
 | EnclaveExitimpliesKill(muvar,k) 	(* ~isVarLowContext -> μi = N ∨ K'' = Ø *) ->
 					(* Revisit: making this same as k = Ø *)
-					let rec loop c2 = function
-					  |[] -> c2
+					let rec loop c1 = function
+					  |[] -> c1
 					  |xs::ktail -> let c1' = Constr.add  (Eidcond(xs, 0)) c1 in 
 									loop c1'  ktail
 					in 
@@ -180,6 +180,15 @@ let rec convertconstr c1 c2 = function
 					in 
 					let c3 = loop c2  (k1, k2) in
 					(c1, c3)
+
+| Killempty k			      (* μ = Ø *)->
+					let rec loop c1 = function
+					  |[] -> c1
+					  |xs::ktail -> let c1' = Constr.add  (Eidcond(xs, 0)) c1 in 
+									loop c1'  ktail
+					in 
+					let c3 = loop c1  k in
+					(c3, c2)
 
 let rec convertconstraints c1 c2 tconstrset =
     if (TConstraints.is_empty tconstrset) then

@@ -4,7 +4,7 @@ open Proplogic
 exception HelperError of string
 
 
-let number_of_enclaves = 10
+let number_of_enclaves = 2
 
 
 let get_mode = function
@@ -128,6 +128,7 @@ let gen_killset():killset =
 let next_tvar () : mode =
   let x = !tvar_cell in
   let s = "x" ^ string_of_int x in
+  let _ = incr tvar_cell in
   (* Generate a list of boolean variables indicating the enclave id *)
   let eidvarlist = gen_killset () in
   ModeVar (s, eidvarlist)

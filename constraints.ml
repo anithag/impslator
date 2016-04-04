@@ -106,7 +106,24 @@ let rec translatetype (s:labeltype) : enclabeltype =
 			let gencpre = (VarLocMap.map (fun a -> translatetype a) gpre) in
 			let gencpost = (VarLocMap.map (fun a -> translatetype a) gpost) in
 			 (EBtFunc(mu, gencpre, kpre, p, u, gencpost, kpost), q)
-	    
+and translategamma (g:context) = 
+	let genc = (VarLocMap.map (fun a -> translatetype a) g) in
+	 (* enumerate all location bindings and generate constraints on delta *)
+	let gencloc = (VarLocMap.filter (fun key a -> begin match key with
+					| Reg x -> false
+					| Mem l -> true
+					end ) genc) in
+	let allloc = VarLocMap.bindings gencloc in
+	let rec loop loclist c delta = begin match loclist with
+		|[] -> (c, delta)
+		|(Mem l, (EBtRef(mu, (_, Low)), _))::tail -> loop tail c  delta
+		|(Mem l, (EBtRef(mu, (_, _)), _))::tail -> let delta' = VarLocMap.add (Mem l) mu delta in
+							    loop tail (TConstraints.add (ModeisN(mu, 1)) c) delta'
+		| _::tail -> raise (TranslationError "Only Mem bindings are allowed")
+		end in 
+	let (c, delta) = loop allloc (TConstraints.empty) (VarLocMap.empty) in
+	(c, delta, genc)
+ 
 let rec get_src_exp_type (g:context) (e:exp) : labeltype =
   match e with
    | Var x -> (try VarLocMap.find (Reg x) g with Not_found -> raise TypeNotFoundError)
@@ -508,16 +525,12 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		  let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
 		   (TConstraints.empty, texp)
   | Loc l        -> 
-		    let (enctype, gamma') = if (VarLocMap.mem (Mem l) gamma) then 
-		    				(VarLocMap.find (Mem l) gamma, gamma)
-		    		else
-						let enctype = translatetype srctype in
-				  		(enctype, VarLocMap.add (Mem l) enctype gamma)
-				 in 
+		    (* bindings should exist *)
+		    let enctype = (VarLocMap.find (Mem l) gamma) in
 		    let mu' = get_mode enctype in
-		    let delta' = VarLocMap.add (Mem l) mu' delta in 
 		    let ence = ELoc(mu', l) in
-		    let texp = TExp(srcgamma,e,srctype, mu,gamma',delta',ence,enctype) in
+		    (* gamma and delta need not be updated *)
+		    let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
 		    (TConstraints.empty, texp)
  | Deref e'     ->
 		 let b = get_exp_type srcgamma e' in 
@@ -526,6 +539,8 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		 (* Translate e' *)
 		 let ence' = get_translated_exp texp in
 		 let gamma' = get_translated_exp_gamma texp in
+
+		 (* REMOVE this: delta does not change *)
 		 let delta' = get_translated_exp_delta texp in
 		 let enclt = get_translated_exp_type texp in
 		 let mu' = get_mode enclt  in

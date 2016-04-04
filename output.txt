@@ -1,5 +1,4 @@
-enclave (0, 
- while ( *l1 == 1 )  output *l2 to H   end  
- )kill();
- set(cnd)  ; 
- output *l3 to L  
+enclave(_, 
+ y1:= *l1;
+y1:= 0;
+)z:= 1;

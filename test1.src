@@ -1,0 +1,2 @@
+y1:int_high; z:int_low
+y1:=1;z:=1
