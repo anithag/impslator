@@ -190,6 +190,23 @@ let rec convertconstr c1 c2 = function
 					let c3 = loop c1  k in
 					(c3, c2)
 
+| Enclaveid muvar			->	
+					let eidlst = get_mode_eidlist muvar in
+					let rec loop c2 = function
+					| [] -> c2
+					| xs1::tail -> let rec innerloop c3 = function
+							|[] -> c3
+							|xs2::tail'->
+									let c3' = Constr2.add (Modecond (xs1, 1), Modecond (xs2,0)) c3 in
+									let c3'' = Constr2.add (Modecond (xs2, 1), Modecond (xs1,0)) c3' in
+									innerloop c3'' tail'
+							in 
+							let c4 = innerloop c2 tail in
+							loop c4 tail
+					in 
+					let c5 = loop c2 eidlst in
+					(c1, c5)
+
 let rec convertconstraints c1 c2 tconstrset =
     if (TConstraints.is_empty tconstrset) then
 			(c1, c2)

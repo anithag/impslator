@@ -39,11 +39,13 @@ let () =
   (* μ0 = N *)
   let c' = TConstraints.add (ModeisN (mu0,0)) c in
 
+  let c'' = TConstraints.add (Enclaveid mu0) c' in
+
   (* k = Ø *)
-  let c'' = TConstraints.add (Killempty k) c' in
+  let c''' = TConstraints.add (Killempty k) c' in
 
   (* Convert translation constraints into proposition logic *)
-  let (c1, c2) = Convertconstraints.convertconstraints (Constr.empty) (Constr2.empty) c'' in
+  let (c1, c2) = Convertconstraints.convertconstraints (Constr.empty) (Constr2.empty) c''' in
   
   (* No optimization for now *)
   let mu0var = get_mode_var mu0 in

@@ -92,22 +92,33 @@ let rec get_exp_type (g:context) (e:exp) : labeltype =
  
 let rec get_exp_label lt = (snd lt)
 		
-let rec translatetype (s:labeltype) : enclabeltype = 
+let rec translatetype (s:labeltype)  = 
 	match s with
-	| (BtInt, p ) -> (EBtInt, p)
-	| (BtBool, p) -> (EBtBool, p)
-	| (BtCond, p) -> let mu = next_tvar () in (EBtCond mu, p)
+	| (BtInt, p ) -> ((EBtInt, p), TConstraints.empty)
+	| (BtBool, p) -> ((EBtBool, p), TConstraints.empty)
+	| (BtCond, p) -> let mu = next_tvar () in ((EBtCond mu, p), (TConstraints.add (Enclaveid mu) TConstraints.empty))
 	| (BtRef b, p)-> let mu = next_tvar () in
-			(EBtRef(mu, (translatetype b)), p)
+			 let (b', c) = (translatetype b) in
+			((EBtRef(mu, b'), p), (TConstraints.add (Enclaveid mu) c))
         | (BtFunc(gpre, p, u, gpost), q) -> let mu = next_tvar () in
 			let kpre = gen_killset () in
 			let kpost = gen_killset () in
+			let tmpc = TConstraints.empty in
 			(* Convert gpre and gpost*)
-			let gencpre = (VarLocMap.map (fun a -> translatetype a) gpre) in
-			let gencpost = (VarLocMap.map (fun a -> translatetype a) gpost) in
-			 (EBtFunc(mu, gencpre, kpre, p, u, gencpost, kpost), q)
+			(* translatetype returns a tuple of labeledtype and constraints *)
+			let gencpretmp = (VarLocMap.map (fun a -> translatetype a ) gpre) in
+			let gencposttmp = (VarLocMap.map (fun a -> translatetype a) gpost) in
+			let gencpre  = (VarLocMap.map (fun a -> fst a ) gencpretmp) in
+			let gencpost = (VarLocMap.map (fun a -> fst a) gencposttmp) in
+
+			(* update constraints *)
+			let tmpc' = (VarLocMap.fold (fun key a c -> (TConstraints.union (snd a) c)) gencpretmp tmpc) in 
+			let tmpc'' = (VarLocMap.fold (fun key a c -> (TConstraints.union (snd a) c)) gencposttmp tmpc') in 
+			 ((EBtFunc(mu, gencpre, kpre, p, u, gencpost, kpost), q), tmpc'')
 and translategamma (g:context) = 
-	let genc = (VarLocMap.map (fun a -> translatetype a) g) in
+	let genctmp = (VarLocMap.map (fun a -> translatetype a) g) in
+	let genc = (VarLocMap.map (fun a -> fst a) genctmp) in
+	let c = (VarLocMap.fold (fun key a c -> (TConstraints.union (snd a) c)) genctmp TConstraints.empty) in 
 	 (* enumerate all location bindings and generate constraints on delta *)
 	let gencloc = (VarLocMap.filter (fun key a -> begin match key with
 					| Reg x -> false
@@ -121,8 +132,9 @@ and translategamma (g:context) =
 							    loop tail (TConstraints.add (ModeisN(mu, 1)) c) delta'
 		| _::tail -> raise (TranslationError "Only Mem bindings are allowed")
 		end in 
-	let (c, delta) = loop allloc (TConstraints.empty) (VarLocMap.empty) in
-	(c, delta, genc)
+	let (c1, delta) = loop allloc c (VarLocMap.empty) in
+	(c1, delta, genc)
+ 
  
 let rec get_src_exp_type (g:context) (e:exp) : labeltype =
   match e with
@@ -475,8 +487,10 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 
 				    if not (List.length tail = 0) then
 				    	let muj = next_tvar () in
+					let c4' = TConstraints.add (Enclaveid muj) c4 in
+
 					(* μ = N -> μi = μ *)
-					let c5 = TConstraints.add (ModenotNimpliesEq(mu, mui)) c4 in
+					let c5 = TConstraints.add (ModenotNimpliesEq(mu, mui)) c4' in
 
 
 					(* μ = N -> K'' = Ø *)
@@ -502,28 +516,28 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 				     		seqloop (TConstraints.union c1 c4) mui g' genc' kj (tstmtlist@[tstmt1])  tail
 		     in
 		     let mu1 = next_tvar () in
-		     let c', srcgamma', gamma', k', tstmtlist = seqloop TConstraints.empty mu1 srcgamma gamma k [] seqlist in
+		     let c', srcgamma', gamma', k', tstmtlist = seqloop (TConstraints.add (Enclaveid mu1) TConstraints.empty) mu1 srcgamma gamma k [] seqlist in
 		     let tseq = TSeq(pc, srcgamma,setu,srcgamma', s,mu,gamma, k, delta, tstmtlist, gamma', k') in
 		     (c', tseq)
  
 
 and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with 
    | Var x     ->  
-		    let (enctype, gamma') = if (VarLocMap.mem (Reg x) gamma) then 
-		    				( VarLocMap.find (Reg x) gamma, gamma) 
+		    let (enctype, gamma', c) = if (VarLocMap.mem (Reg x) gamma) then 
+		    				(VarLocMap.find (Reg x) gamma, gamma, TConstraints.empty) 
 		    			else
-						let enctype = translatetype srctype in
-				  		(enctype, VarLocMap.add (Reg x) enctype gamma)
+						let (enctype, c) = translatetype srctype in
+				  		(enctype, VarLocMap.add (Reg x) enctype gamma, c)
 				 in 
 		    let mu' = get_mode enctype in
 		    let ence = EVar x in
 		    let texp = TExp(srcgamma,e,srctype, mu,gamma',delta,ence,enctype) in
-		    (TConstraints.empty, texp)
+		    (c, texp)
   | Constant n   -> 
-		  let enctype = translatetype srctype in
+		  let (enctype, c) = translatetype srctype in
 		  let ence = EConstant n in
 		  let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
-		   (TConstraints.empty, texp)
+		   (c, texp)
   | Loc l        -> 
 		    (* bindings should exist *)
 		    let enctype = (VarLocMap.find (Mem l) gamma) in
@@ -554,27 +568,28 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		  (c2, texp)
  | Isunset x ->
 		    (* srctype is (cond ref, low) *)
-		    let (enctype, gamma') = if (VarLocMap.mem (Reg x) gamma) then 
-		    				(VarLocMap.find (Reg x) gamma, gamma) 
+		    let (enctype, gamma', c) = if (VarLocMap.mem (Reg x) gamma) then 
+		    				(VarLocMap.find (Reg x) gamma, gamma, TConstraints.empty) 
 		    		else
-						let enctype = translatetype srctype in
-				  		(enctype, VarLocMap.add (Reg x) enctype gamma)
+						let (enctype, c) = translatetype srctype in
+				  		(enctype, VarLocMap.add (Reg x) enctype gamma, c)
 				 in 
 		    let mu' = get_mode enctype in
 		    let delta' = VarLocMap.add (Reg x) mu' delta in
 		    let ence = EIsunset x in
 		    let texp = TExp(srcgamma,e,srctype, mu,gamma',delta',ence,enctype) in
 
-		    let c1 = TConstraints.add (ModenotNimpliesEq(mu', mu)) TConstraints.empty in
+		    let c1 = TConstraints.add (ModenotNimpliesEq(mu', mu)) c in
 		    (c1, texp)
  | Lam(gpre, p, u, gpost,q, s) -> 
-		    let enctype = translatetype srctype in
+		    let (enctype, c) = translatetype srctype in
 		    let (m', gencpre, kpre, p, u, gencpost, kpost) = invert_encfunctype enctype in
 		    let  c1, tstmt = gen_constraints_stmt p gpre u s m' gencpre kpre delta in
 		    let delta' = get_translated_stmt_delta tstmt in
 		    let texp = TLamExp(srcgamma,e,srctype, mu,gamma,delta',tstmt,enctype) in
 
-		    let c2 = TConstraints.add (ModeEqual(mu,m')) c1 in
+		    let c1' = TConstraints.union c1 c in
+		    let c2 = TConstraints.add (ModeEqual(mu,m')) c1' in
 		    let allreglow = check_typing_context_reg_low gencpost in
 		    let c3 = if (not allreglow) then
 				(TConstraints.add (ModeisN(m',1)) c2)

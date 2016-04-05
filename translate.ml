@@ -9,11 +9,25 @@ exception PrintError
 exception TranslationError of string
 exception IdNotFound of string
 
-let printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) =  match tail with
-	|[] -> if (not isoutermodeenc)&&(iscurmodeenc) then
+let printkill oc (model, kj, ki') = 
+  let len = List.length kj in   (* length of k and ki' should be equal *)
+  let rec loop idx = 
+	if (idx >= len) then 
+	     ()
+		(* Recall that k'' = kj \ k' *)
+	else if ((ModeSAT.find (List.nth kj idx) model)=1) &&  ((ModeSAT.find (List.nth ki' idx) model)=0) then 
+		let _ =	Printf.fprintf oc "kill(%d);\n" idx
+		in  loop (idx+1) 
+	else 
+		loop (idx + 1)
+  in loop 0
+
+let printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, prevk', seqk') =  match tail with
+	|[] -> let _ = if (not isoutermodeenc)&&(iscurmodeenc) then
 			Printf.fprintf oc ")"
-		else
+		      else
 			()
+		in printkill oc (model, seqk', prevk')
 	| TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')::tail
 	| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k')::tail
 	| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')::tail
@@ -24,13 +38,14 @@ let printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model
 	| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')::tail
 	| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _,  gamma', k')::tail->
 		let isnextmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
-		if (not isoutermodeenc)&&(iscurmodeenc)&&(not isnextmodeenc) then
-			Printf.fprintf oc ")"
-		else
-			()
+		let _ = if (not isoutermodeenc)&&(iscurmodeenc)&&(not isnextmodeenc) then
+				Printf.fprintf oc ")"
+			else
+				()
+			in printkill oc (model, k, prevk')
 
 let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
-| TSeq(pc, srcgamma,setu,srcgamma', s,mu,gamma, k, delta, tstmtlist, gamma', k') -> 
+| TSeq(pc, srcgamma,setu,srcgamma', s,mu,gamma, k, delta, tstmtlist, gamma', seqk') -> 
 		let rec loop isoutermodeenc isprevmodeenc tstmtlist = 
 			begin match tstmtlist with
 			| [] -> ()
@@ -41,7 +56,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								Printf.fprintf oc "enclave(_, \n skip;\n " 
 							in
-						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
+						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 						loop isoutermodeenc iscurmodeenc tail
 
 			| TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, cnd, gamma', k')::tail ->
@@ -51,7 +66,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								Printf.fprintf oc "enclave(_, \n set(%s);\n" cnd 
 							in
-						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
+						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 						loop isoutermodeenc iscurmodeenc tail
 
 			| TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, x, texp, gamma', k')::tail ->
@@ -61,7 +76,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								Printf.fprintf oc "enclave(_, \n %s:= %a;\n" x printEncExp (model, texp)  
 							in
-						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
+						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 						loop isoutermodeenc iscurmodeenc tail
 			| TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, x, texp, gamma', k')::tail->
 						let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
@@ -70,7 +85,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								Printf.fprintf oc "enclave(_, \n %s:= declassify(%a);\n" x printEncExp (model, texp)  
 							in
-						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
+						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 						loop isoutermodeenc iscurmodeenc tail
 			| TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp1, texp2, gamma', k')::tail ->
 						let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
@@ -79,7 +94,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								Printf.fprintf oc "enclave(_, \n %a <- %a;\n" printEncExp (model, texp1) printEncExp (model, texp2)  
 							in
-						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
+						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 						loop isoutermodeenc iscurmodeenc tail
 			| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ch, texp, gamma', k')::tail ->
 						let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
@@ -88,7 +103,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								Printf.fprintf oc "enclave(_, \n Output %a to _;\n" printEncExp (model, texp)
 							in
-						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
+						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 						loop isoutermodeenc iscurmodeenc tail
 			| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k')::tail -> 
 						let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
@@ -97,7 +112,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 							Printf.fprintf oc "enclave(_, \n If %a then \n %a \n else \n %a;\n" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
 						in
-						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
+						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 						loop isoutermodeenc iscurmodeenc tail
 			| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k')::tail ->
 						let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
@@ -106,7 +121,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								Printf.fprintf oc "enclave(_, \n while %a do \n %a \n done" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
 							in
-							let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
+							let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 							loop isoutermodeenc iscurmodeenc tail
 			| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp,  gamma', k')::tail->
 						let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
@@ -115,7 +130,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								Printf.fprintf oc "enclave(_, \n call(%a);\n" printEncExp (model, texp)
 							in
-						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model) in
+						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 						loop isoutermodeenc iscurmodeenc tail
 			| _ -> raise (TranslationError "Expecting non-Sequence judgment") 
 			end in

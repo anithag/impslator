@@ -2,3 +2,5 @@ enclave(_,
  y1:= *l1;
 y1:= 0;
 )z:= 1;
+kill(0);
+kill(1);
