@@ -7,6 +7,10 @@ exception HelperError of string
 let number_of_enclaves = 2
 
 
+let labnotlow = function
+ | Low -> false
+ | _ -> true
+
 let get_mode = function
 | EBtRef(mu', lt), p -> mu'
 | EBtFunc(mu', _,_,p,u,_,_), q -> mu'

@@ -459,11 +459,41 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 		 let varlabtype = join (pc, (get_enc_exp_label enclt)) in
 		 let ence = get_translated_exp texp in
 		 let encs =  EAssign (v, ence) in 
+		 let c2 = if labnotlow varlabtype then
+				TConstraints.add (ModeisN (mu, 1)) c1 
+			  else
+				c1 in
 		 (* update gamma *)
 		 let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
 		 let gamma' =  enc_flow_sensitive_type_infer pc gammatmp encs in
 		 let tstmt = TAssign(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, v, texp, gamma', k) in
+		 (c2, tstmt)
+ | Declassify (v,e) -> let b = get_exp_type srcgamma e in 
+		 let c1, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
+		 let gammatmp = get_translated_exp_gamma texp in
+		 let enclt = get_translated_exp_type texp in
+		 let varlabtype = Low in
+		 let ence = get_translated_exp texp in
+		 let encs =  EDeclassify(v, ence) in 
+		 (* update gamma *)
+		 let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
+		 let gamma' =  enc_flow_sensitive_type_infer pc gammatmp encs in
+		 let tstmt = TDeclassify(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, v, texp, gamma', k) in
 		 (c1, tstmt)
+ | Update(e1,e2) -> let b1 = get_exp_type srcgamma e1 in 
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+		 let gammatmp1 = get_translated_exp_gamma texp1 in
+		 let b2 = get_exp_type srcgamma e2 in 
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gammatmp1 delta  in
+		 let gammatmp2 = get_translated_exp_gamma texp2 in
+		 let ence1 = get_translated_exp texp1 in
+		 let ence2 = get_translated_exp texp2 in
+		 let encs =  EUpdate(ence1, ence2) in 
+		 (* update gamma *)
+		 let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
+		 let gamma' =  enc_flow_sensitive_type_infer pc gammatmp2 encs in
+		 let tstmt = TUpdate(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp1, texp2, gamma', k) in
+		 (TConstraints.union c1 c2, tstmt)
  |Seq(s1, s2)  -> let seqlist = flattenseq s in
 			let rec seqloop c1 mui g genc ki tstmtlist = function
 			| [] -> (c1, g, genc, ki, tstmtlist)
@@ -519,6 +549,41 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 		     let c', srcgamma', gamma', k', tstmtlist = seqloop (TConstraints.add (Enclaveid mu1) TConstraints.empty) mu1 srcgamma gamma k [] seqlist in
 		     let tseq = TSeq(pc, srcgamma,setu,srcgamma', s,mu,gamma, k, delta, tstmtlist, gamma', k') in
 		     (c', tseq)
+ |If (e, s1, s2) ->let b = get_exp_type srcgamma e in 
+		   let c, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
+		   let encgamma = get_translated_exp_gamma texp in
+		   let mu1 = next_tvar () in
+		   let  c1, tstmt1 = gen_constraints_stmt pc srcgamma setu s1 mu1 encgamma k delta in
+	    	   let k1 = get_translated_stmt_enc_postkillset tstmt1 in
+		   (* let genc1 = get_translated_stmt_enc_postgamma tstmt1 in *)
+		   let mu2 = next_tvar () in
+		   let  c2, tstmt2 = gen_constraints_stmt pc srcgamma setu s2 mu2 encgamma k delta in
+	    	   let k2 = get_translated_stmt_enc_postkillset tstmt2 in
+		   (* let genc2 = get_translated_stmt_enc_postgamma tstmt2 in *)
+		   let ence = get_translated_exp texp in
+		   let es1 = get_translated_stmt tstmt1 in
+		   let es2 = get_translated_stmt tstmt2 in
+		   let encs =  EIf(ence, es1, es2) in 
+		   let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
+		   let gamma' =  enc_flow_sensitive_type_infer pc encgamma encs in
+
+		   let allreglow = check_typing_context_reg_low gamma' in
+		   let c3 = TConstraints.union c c1 in
+		   let c4 = TConstraints.union c2 c3 in
+		   let c5 = TConstraints.add (KillEq (k1, k2)) c4 in
+		   let c6 = if not allreglow then
+				TConstraints.add (ModeisN (mu, 1)) c5
+			    else
+				c5 in
+		   let enclt = get_translated_exp_type texp in
+		   let c7 = if labnotlow (snd enclt) then
+				TConstraints.add (ModeisN (mu, 1)) c5
+			    else
+				c6 in
+		   let k' = k1 in (* k1 or k2 does not matter, because k1 = k2 *)
+		   let tstmt = TIf(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ence, tstmt1, tstmt2, gamma', k') in
+ 		   (c7, tstmt)
+
  
 
 and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with 
@@ -596,6 +661,89 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 			     else
 				c2
 		    in (c3, texp)
+ |True		-> (TConstraints.empty, TExp(srcgamma,e,srctype, mu,gamma,delta,ETrue, (EBtBool, Low)))
+ |False		-> (TConstraints.empty, TExp(srcgamma,e,srctype, mu,gamma,delta,EFalse, (EBtBool, Low)))
+		 
+ |Plus (e1, e2) ->
+		 let b1 = get_exp_type srcgamma e1 in 
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+
+		 (* Translate e1 *)
+		 let ence1 = get_translated_exp texp1 in
+		 let gamma1 = get_translated_exp_gamma texp1 in
+
+		 let b2 = get_exp_type srcgamma e2 in 
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+
+		 (* Translate e2 *)
+		 let ence2 = get_translated_exp texp2 in
+		 let gamma2 = get_translated_exp_gamma texp2 in
+
+		 let ence = EPlus (ence1, ence2) in
+		 let enctype = get_enc_exp_type gamma2 ence in 
+
+		 let texp = TExp(srcgamma,e,srctype, mu,gamma2,delta,ence,enctype) in
+		 (TConstraints.union c1 c2, texp)
+ |Modulo (e1, e2) ->
+		 let b1 = get_exp_type srcgamma e1 in 
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+
+		 (* Translate e1 *)
+		 let ence1 = get_translated_exp texp1 in
+		 let gamma1 = get_translated_exp_gamma texp1 in
+
+		 let b2 = get_exp_type srcgamma e2 in 
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+
+		 (* Translate e2 *)
+		 let ence2 = get_translated_exp texp2 in
+		 let gamma2 = get_translated_exp_gamma texp2 in
+
+		 let ence = EModulo (ence1, ence2) in
+		 let enctype = get_enc_exp_type gamma2 ence in 
+
+		 let texp = TExp(srcgamma,e,srctype, mu,gamma2,delta,ence,enctype) in
+		 (TConstraints.union c1 c2, texp)
+ |Eq (e1, e2) ->
+		 let b1 = get_exp_type srcgamma e1 in 
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+
+		 (* Translate e1 *)
+		 let ence1 = get_translated_exp texp1 in
+		 let gamma1 = get_translated_exp_gamma texp1 in
+
+		 let b2 = get_exp_type srcgamma e2 in 
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+
+		 (* Translate e2 *)
+		 let ence2 = get_translated_exp texp2 in
+		 let gamma2 = get_translated_exp_gamma texp2 in
+
+		 let ence = EEq (ence1, ence2) in
+		 let enctype = get_enc_exp_type gamma2 ence in 
+
+		 let texp = TExp(srcgamma,e,srctype, mu,gamma2,delta,ence,enctype) in
+		 (TConstraints.union c1 c2, texp)
+ |Neq (e1, e2) ->
+		 let b1 = get_exp_type srcgamma e1 in 
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+
+		 (* Translate e1 *)
+		 let ence1 = get_translated_exp texp1 in
+		 let gamma1 = get_translated_exp_gamma texp1 in
+
+		 let b2 = get_exp_type srcgamma e2 in 
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+
+		 (* Translate e2 *)
+		 let ence2 = get_translated_exp texp2 in
+		 let gamma2 = get_translated_exp_gamma texp2 in
+
+		 let ence = ENeq (ence1, ence2) in
+		 let enctype = get_enc_exp_type gamma2 ence in 
+
+		 let texp = TExp(srcgamma,e,srctype, mu,gamma2,delta,ence,enctype) in
+		 (TConstraints.union c1 c2, texp)
 
 and gen_constraints_type (s1: enclabeltype) (s2:enclabeltype) = 
    match (s1, s2) with
