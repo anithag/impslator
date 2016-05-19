@@ -24,6 +24,16 @@ let get_mode_eidlist = function
 |ModeVar(mu1, l) -> l
 | _   -> raise (HelperError "Expected Mode variable")
 
+let get_prekillset(t:enclabeltype) =
+   match t with
+   |EBtFunc(m,gencpre,prekill,p,u, gencpost,postkill), q -> prekill
+   |_ -> raise (HelperError "")
+
+let get_postkillset(t:enclabeltype) =
+   match t with
+   |EBtFunc(m,gencpre,prekill,p,u, gencpost,postkill), q -> postkill
+   |_ -> raise (HelperError "")
+
 let get_enc_precontext (t:enclabeltype) =
    match t with
    |EBtFunc(m,gencpre,_,p,u, gencpost,_), q -> gencpre

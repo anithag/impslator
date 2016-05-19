@@ -583,7 +583,51 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 		   let k' = k1 in (* k1 or k2 does not matter, because k1 = k2 *)
 		   let tstmt = TIf(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ence, tstmt1, tstmt2, gamma', k') in
  		   (c7, tstmt)
+ |While (e, s1) ->let b = get_exp_type srcgamma e in 
+		   let c, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
+		   let encgamma = get_translated_exp_gamma texp in
+		   let mu1 = next_tvar () in
+		   let  c1, tstmt1 = gen_constraints_stmt pc srcgamma setu s1 mu1 encgamma k delta in
+	    	   let k1 = get_translated_stmt_enc_postkillset tstmt1 in
 
+		   let ence = get_translated_exp texp in
+		   let es1 = get_translated_stmt tstmt1 in
+		   let encs =  EWhile(ence, es1) in 
+		   let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
+		   let gamma' =  enc_flow_sensitive_type_infer pc encgamma encs in
+
+		   let allreglow = check_typing_context_reg_low gamma' in
+		   let c2 = TConstraints.union c c1 in
+		   let c3 = TConstraints.add (KillEq (k, k1)) c2 in
+		   let c4 = if not allreglow then
+				TConstraints.add (ModeisN (mu, 1)) c3
+			    else
+				c3 in
+		   let enclt = get_translated_exp_type texp in
+		   let c5 = if labnotlow (snd enclt) then
+				TConstraints.add (ModeisN (mu, 1)) c4
+			    else
+				c4 in
+		   let tstmt = TWhile(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ence, tstmt1, gamma', k1) in
+ 		   (c5, tstmt)
+ |Call(e) 	->let b = get_exp_type srcgamma e in 
+		  let c, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
+		  let encgamma = get_translated_exp_gamma texp in
+		  let enctype = get_translated_exp_type texp in
+		  let encgammaplus = get_enc_postcontext enctype in
+		  let prekill = get_prekillset enctype in
+		  let postkill = get_postkillset enctype in
+		  let c1 = TConstraints.add (KillEq (k, prekill)) c in
+
+		  let ence = get_translated_exp texp in
+		  let encs =  ECall(ence) in 
+		  (* FIXME: Prepare gammaout = encgammaplus U encgamma *)
+		  let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
+		  let gamma' =  enc_flow_sensitive_type_infer pc encgamma encs in
+
+		  let tstmt = TCall(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp, gamma', postkill) in
+		  (c1, tstmt)
+		   
  
 
 and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with 
