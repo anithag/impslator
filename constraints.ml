@@ -627,6 +627,23 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 
 		  let tstmt = TCall(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp, gamma', postkill) in
 		  (c1, tstmt)
+ | Skip 	-> let encs = ESkip in
+		  let tstmt = TSkip(pc,srcgamma,setu,srcgamma,s,mu,gamma, k, delta, encs, gamma, k) in
+		   (TConstraints.empty, tstmt)
+ | Set x 	-> 
+		  let tstmt = TSetcnd(pc,srcgamma,setu,srcgamma,s,mu,gamma, k, delta, x, gamma, k) in
+		   (TConstraints.empty, tstmt)
+ | Output(ell, e) ->
+ 		 let b = get_exp_type srcgamma e in 
+		 let c1, texp1 = gen_constraints_exp srcgamma e b mu gamma delta  in
+		 let gammatmp1 = get_translated_exp_gamma texp1 in
+		 let ence = get_translated_exp texp1 in
+		 let encs =  EOutput(ell, ence) in 
+		 (* update gamma *)
+		 let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
+		 let gamma' =  enc_flow_sensitive_type_infer pc gammatmp1 encs in
+		 let tstmt = TOut(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ell, texp1, gamma', k) in
+		 (TConstraints.union c1 TConstraints.empty, tstmt)
 		   
  
 
@@ -638,7 +655,7 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 						let (enctype, c) = translatetype srctype in
 				  		(enctype, VarLocMap.add (Reg x) enctype gamma, c)
 				 in 
-		    let mu' = get_mode enctype in
+		    (* let mu' = get_mode enctype in *)
 		    let ence = EVar x in
 		    let texp = TExp(srcgamma,e,srctype, mu,gamma',delta,ence,enctype) in
 		    (c, texp)

@@ -1,0 +1,10 @@
+l1: int_high~top,cnd ref_low;
+l2: int_high~top,cnd ref_low;
+l3: int_low ref_low;
+cnd: cond_low
+
+while (*l1) == 1 do
+ output(H, (*l2))
+end;
+set(cnd);
+output(L, (*l3))

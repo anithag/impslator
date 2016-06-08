@@ -1,0 +1,17 @@
+l1: int_low ref_low;
+l2: int_high ref_low;
+l3: int_high ref_low;
+l4: int_high ref_low
+
+
+while (*l1) != 0 do
+ 
+	if (*l1) == 1 then
+		output(H, (*l2)+(*l3));
+		skip
+	else
+		output(H, (*l2)%(*l3));
+		skip
+	fi
+end;
+skip
