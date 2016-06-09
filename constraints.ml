@@ -312,6 +312,7 @@ let get_translated_stmt_delta = function
 | TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> delta
+| TSeq(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlist, gamma', k') -> delta
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, _, gamma', k') -> delta
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> delta
 | TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  delta
@@ -323,6 +324,7 @@ let get_translated_stmt_src_postgamma = function
 | TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> srcgamma'
+| TSeq(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlist, gamma', k') -> srcgamma'
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> srcgamma'
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> srcgamma'
 | TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  srcgamma'
@@ -334,6 +336,7 @@ let get_translated_stmt_enc_pregamma = function
 | TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> gamma
+| TSeq(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlist, gamma', k') -> gamma
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> gamma
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> gamma
 | TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  gamma
@@ -345,6 +348,7 @@ let get_translated_stmt_enc_postgamma = function
 | TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> gamma'
+| TSeq(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlist, gamma', k') -> gamma'
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> gamma'
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> gamma'
 | TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  gamma'
@@ -356,6 +360,7 @@ let get_translated_stmt_enc_prekillset = function
 | TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> k
+| TSeq(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlist, gamma', k') -> k
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> k
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> k
 
@@ -366,6 +371,7 @@ let get_translated_stmt_enc_postkillset = function
 | TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') -> k'
+| TSeq(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlist, gamma', k') -> k'
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k') -> k'
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k') -> k'
 | TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, tlamexp,  gamma', k')->  k'
@@ -377,6 +383,7 @@ let get_translated_stmt_mode = function
 | TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
+| TSeq(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k') 
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, _, gamma', k') 
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k') 
 | TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _,  gamma', k')-> mu
@@ -561,8 +568,8 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 	    	   let k2 = get_translated_stmt_enc_postkillset tstmt2 in
 		   (* let genc2 = get_translated_stmt_enc_postgamma tstmt2 in *)
 		   let ence = get_translated_exp texp in
-		   let es1 = get_translated_stmt tstmt1 in
-		   let es2 = get_translated_stmt tstmt2 in
+		   let es1 = get_translated_seq_stmt tstmt1 in
+		   let es2 = get_translated_seq_stmt tstmt2 in
 		   let encs =  EIf(ence, es1, es2) in 
 		   let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
 		   let gamma' =  enc_flow_sensitive_type_infer pc encgamma encs in
@@ -591,7 +598,7 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta = match s with
 	    	   let k1 = get_translated_stmt_enc_postkillset tstmt1 in
 
 		   let ence = get_translated_exp texp in
-		   let es1 = get_translated_stmt tstmt1 in
+		   let es1 = get_translated_seq_stmt tstmt1 in
 		   let encs =  EWhile(ence, es1) in 
 		   let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
 		   let gamma' =  enc_flow_sensitive_type_infer pc encgamma encs in

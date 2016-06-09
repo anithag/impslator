@@ -12,6 +12,7 @@ while (*l1) != 0 do
 	else
 		output(H, (*l2)%(*l3));
 		skip
-	fi
+	fi;
+	skip
 end;
 skip
