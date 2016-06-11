@@ -78,6 +78,7 @@ let rec get_exp_type (g:context) (e:exp) : labeltype =
    | Loc l -> (try VarLocMap.find (Mem l) g with Not_found -> raise TypeNotFoundError)
    | Lam(gpre, p,u, gpost,q, s) -> (BtFunc(gpre, p,u, gpost), q)
    | Constant n -> (BtInt, Low)
+   | Literal  s -> (BtString, Low)
    | True    -> (BtBool, Low)
    | False -> (BtBool, Low)
    | Eq(e1, e2)
@@ -96,6 +97,7 @@ let rec translatetype (s:labeltype)  =
 	match s with
 	| (BtInt, p ) -> ((EBtInt, p), TConstraints.empty)
 	| (BtBool, p) -> ((EBtBool, p), TConstraints.empty)
+	| (BtString, p) -> ((EBtString, p), TConstraints.empty)
 	| (BtCond, p) -> let mu = next_tvar () in ((EBtCond mu, p), (TConstraints.add (Enclaveid mu) TConstraints.empty))
 	| (BtRef b, p)-> let mu = next_tvar () in
 			 let (b', c) = (translatetype b) in
@@ -142,6 +144,7 @@ let rec get_src_exp_type (g:context) (e:exp) : labeltype =
    | Loc l -> (try VarLocMap.find (Mem l) g with Not_found -> raise TypeNotFoundError)
    | Lam(gpre, p,u, gpost,q, s) -> (BtFunc(gpre, p,u, gpost), q)
    | Constant n -> (BtInt, Low)
+   | Literal s -> (BtString, Low)
    | True    -> (BtBool, Low)
    | False -> (BtBool, Low)
    | Eq(e1, e2)
@@ -160,6 +163,7 @@ let rec get_enc_exp_type (genc:enccontext) (e:encexp) : enclabeltype =
    | ELoc(mu, l) -> (try VarLocMap.find (Mem l) genc with Not_found -> raise TypeNotFoundError)
    | ELam(mu, gpre, kpre, p,u, gpost, kpost, q,s) -> (EBtFunc(mu,gpre, kpre, p,u, gpost, kpost), q) 
    | EConstant n -> (EBtInt, Low)
+   | ELiteral s -> (EBtString, Low)
    | ETrue     -> (EBtBool, Low)
    | EFalse  -> (EBtBool, Low)
    | EEq(e1, e2) 
@@ -669,6 +673,11 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
   | Constant n   -> 
 		  let (enctype, c) = translatetype srctype in
 		  let ence = EConstant n in
+		  let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
+		   (c, texp)
+  | Literal s   -> 
+		  let (enctype, c) = translatetype srctype in
+		  let ence = ELiteral s in
 		  let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
 		   (c, texp)
   | Loc l        -> 

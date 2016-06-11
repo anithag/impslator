@@ -15,6 +15,7 @@ let digit = ['0'-'9']
 let id = ['a'-'z'] ['a'-'z' '0'-'9' '-']*
 let ws = [' ' '\t']
 let location =['l']['0'-'9']* 
+let literal = ['"']['a'-'z' '0'-'9']*['"']
 
 rule token = parse
 | ws      { token lexbuf }
@@ -51,6 +52,7 @@ rule token = parse
 | "set"   {SET}
 | "int"   { INT } 
 | "bool"  { BOOL } 
+| "string"  { STRING } 
 | "cond"  {COND}
 | "func"  {FUNC}
 | "ref"   {REF}
@@ -61,6 +63,7 @@ rule token = parse
 | "L"|"H" as channel {CHANNEL(channel)}
 | "~"    { ERASE}
 | location as l {LOC(int_of_string (String.sub l 1 ((String.length l)-1)))}
+| literal as strlit {LITERAL(strlit)}
 | id as v { VAR(v) }
 | "*"     { DEREF }
 | digit+ as n  { INTEGER(int_of_string n) }

@@ -208,6 +208,7 @@ and printeexp oc  (model, e) = match e with
   | EPlus (l,r) -> Printf.fprintf oc "%a + %a" printeexp (model, l) printeexp (model, r)
   | EModulo (l,r) -> Printf.fprintf oc "%a %% %a" printeexp (model, l) printeexp (model, r)
   | EConstant n -> Printf.fprintf oc "%d" n
+  | ELiteral s -> Printf.fprintf oc "%s" s
   | ETrue ->  Printf.fprintf oc "true"
   | EFalse -> Printf.fprintf oc "false"
   | EEq (l,r) -> Printf.fprintf oc "%a == %a" printeexp (model, l) printeexp (model, r)

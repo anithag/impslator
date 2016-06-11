@@ -38,6 +38,7 @@ end)
 type basetype = 
     BtInt                             (* int *)
   | BtBool                            (* bool *)
+  | BtString			      (* string *)
   | BtCond                            (* cond *)
   | BtRef of labeltype		     (* tau ref *)
   | BtFunc of context * policy * cndset * context	     (* func *)
@@ -57,7 +58,8 @@ and exp =
     Var of var                      (* x *)
   | Loc of int
   | Lam of context * policy * cndset * context * policy * stmt   (* (lambda(G_pre, p, {}, G_post).stmt)_q *)
-  | Constant of int                      (* n *)
+  | Constant of int                 (* n *)
+  | Literal of string               (* string constants *)
   | Plus of exp * exp               (* e1 + e2 *)
   | Modulo of exp * exp             (* e1 % e2 *)
   | True                            (* true *)
@@ -84,10 +86,11 @@ stmt =
 (* typechecking environments - maps variables to types *)
 and context = labeltype VarLocMap.t
 
-(* Encalve Base types *)
+(* Enclave Base types *)
 type encbasetype = 
     EBtInt                             (* int *)
   | EBtBool                            (* bool *)
+  | EBtString                          (* string *)
   | EBtCond of mode                    (* cond *)
   | EBtRef of mode * enclabeltype      (* tau ref *)
   | EBtFunc of mode* enccontext* killset*policy * cndset * enccontext*killset   (* func *)
@@ -107,6 +110,7 @@ type encexp =
   | ELoc of mode * int 		     (* l^ mode *)
   | ELam of mode * enccontext *killset * policy* cndset * enccontext*killset * policy*encstmt (* First mode|-lambda^mode(gpre,killpre, p,u, gpost, killpost, q, s) *)
   | EConstant of int                  (* n *)
+  | ELiteral of string		 	(* str literal *)
   | EPlus of encexp * encexp          (* e1 + e2 *)
   | EModulo of encexp * encexp        (* e1 % e2 *)
   | ETrue 				(* true *)

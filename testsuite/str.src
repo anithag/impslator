@@ -1,0 +1,3 @@
+
+y1:string_high; l1:string_high ref_low
+ y1:= (*l1) ; y1:= "hello"

@@ -7,10 +7,11 @@
 %token <int> INTEGER
 %token <int> LOC
 %token <string> VAR
+%token <string> LITERAL 
 %token <char> CHANNEL
 %token PLUS MODULO UNDERSCORE LPAREN RPAREN LCURLY RCURLY COMMA SEQ COLON DOT NEQUALS EQUALS TRUE FALSE CALL
        IF THEN ELSE ENDIF LAMBDA EOF DEREF UPDATE SET ISUNSET  OUTPUT ASSIGN SKIP WHILE DO END
-       INT BOOL COND FUNC REF LOW HIGH ERASE CHANNEL DECLASSIFY TOP 
+       INT BOOL  STRING COND FUNC REF LOW HIGH ERASE CHANNEL DECLASSIFY TOP 
 
 %type <Ast.program> program
 %type <Ast.stmt> stmt
@@ -35,6 +36,7 @@ policy  : LOW						{Low}
 
 basetype  : INT				   {BtInt}
           | BOOL			   {BtBool}
+ 	  | STRING			   {BtString}
           | COND			   {BtCond}
           | FUNC LPAREN LCURLY vardecllist RCURLY COMMA policy COMMA Uset COMMA LCURLY vardecllist RCURLY RPAREN {BtFunc($4, $7, $9, $12)}
 	  | labeltype REF		   {BtRef($1)}
@@ -67,6 +69,7 @@ stmt : IF bexp THEN stmt ELSE stmt ENDIF  	{ If($2, $4, $6) }
 exp : bexp 				{ $1 }
     | aexp 				{ $1 }
     | lexp                              { $1 }
+    | sexp				{ $1 }
 
 lexp : LPAREN LAMBDA LPAREN LCURLY vardecllist RCURLY COMMA policy COMMA Uset COMMA LCURLY vardecllist RCURLY RPAREN DOT stmt RPAREN UNDERSCORE policy 	{ Lam($5,$8,$10,$13,$20,$17) }
  
@@ -82,4 +85,5 @@ aexp: VAR                          { Var $1}
     | aexp PLUS aexp 		   { Plus($1, $3) }
     | aexp MODULO aexp 		   { Modulo($1, $3) }
     | LPAREN DEREF exp	RPAREN	   { Deref($3) }
+sexp: LITERAL			   { Literal($1) }
 loc : INTEGER			   { Loc $1}

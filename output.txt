@@ -1,16 +1,5 @@
-while *l1 != 0 do 
- If *l1 == 1 then 
- enclave(_, 
- Output *l2 + *l3 to _;
-)skip;
- 
- else 
- enclave(_, 
- Output *l2 % *l3 to _;
-)skip;
-; 
-skip;
- 
- doneskip;
-kill(0);
+enclave(_, 
+ y1:= *l1;
+y1:= "hello";
+)kill(0);
 kill(1);
