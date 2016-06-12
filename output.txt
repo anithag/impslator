@@ -1,7 +1,6 @@
 enclave(_, 
- y1:= *l1;
-y1:= ("hello", 1);
-)z:= fst y1;
-k:= snd y1;
-kill(0);
+ y1[0] <- *l1[0];
+y1[1] <- *l1[1] ;
+y1:= l2;
+)kill(0);
 kill(1);

@@ -6,12 +6,13 @@
 
 %token <int> INTEGER
 %token <int> LOC
+%token <int> ARRAY 
 %token <string> VAR
 %token <string> LITERAL 
 %token <char> CHANNEL
 %token PLUS MODULO UNDERSCORE LPAREN RPAREN LCURLY RCURLY COMMA SEQ COLON DOT NEQUALS EQUALS TRUE FALSE CALL
        IF THEN ELSE ENDIF LAMBDA EOF DEREF UPDATE SET ISUNSET  OUTPUT ASSIGN SKIP WHILE DO END
-       INT BOOL  STRING COND FUNC REF LOW HIGH ERASE CHANNEL DECLASSIFY TOP FST SND
+       INT BOOL  STRING COND FUNC REF LOW HIGH ERASE CHANNEL DECLASSIFY TOP FST SND LSQBR RSQBR ARRAY
 
 %type <Ast.program> program
 %type <Ast.stmt> stmt
@@ -37,8 +38,9 @@ policy  : LOW						{Low}
 basetype  : INT				   {BtInt}
           | BOOL			   {BtBool}
  	  | STRING			   {BtString}
-	  | LPAREN basetype COMMA basetype RPAREN { BtPair($2, $4)}
           | COND			   {BtCond}
+	  | LPAREN ARRAY labeltype RPAREN   {BtArray($2, $3)}
+	  | LPAREN basetype COMMA basetype RPAREN { BtPair($2, $4)}
           | FUNC LPAREN LCURLY vardecllist RCURLY COMMA policy COMMA Uset COMMA LCURLY vardecllist RCURLY RPAREN {BtFunc($4, $7, $9, $12)}
 	  | labeltype REF		   {BtRef($1)}
 
@@ -46,6 +48,7 @@ labeltype : basetype UNDERSCORE policy  { ($1, $3) }
 
 vardecl   : LOC COLON labeltype   { VarLocMap.add (Mem $1) $3 VarLocMap.empty } 
           | VAR COLON labeltype	    { VarLocMap.add (Reg $1) $3 VarLocMap.empty }
+          | LOC ARRAY COLON labeltype { VarLocMap.add (Arr $1) (BtArray($2, $4), Low) VarLocMap.empty }
 	 
 vardecllist: vardecl                { $1 }
 	 |vardecl SEQ vardecllist   { VarLocMap.merge (fun key left right -> match left, right with
@@ -72,6 +75,7 @@ exp : bexp 				{ $1 }
     | lexp                              { $1 }
     | sexp				{ $1 }
     | texp				{ $1 }
+    | arrexp				{ $1 }
 
 lexp : LPAREN LAMBDA LPAREN LCURLY vardecllist RCURLY COMMA policy COMMA Uset COMMA LCURLY vardecllist RCURLY RPAREN DOT stmt RPAREN UNDERSCORE policy 	{ Lam($5,$8,$10,$13,$20,$17) }
  
@@ -81,7 +85,7 @@ bexp: TRUE			  			 { True  }
     | aexp NEQUALS aexp 				 { Neq($1, $3) }
     | ISUNSET LPAREN VAR RPAREN   			 { Isunset($3) }
 
-aexp: VAR                          { Var $1}
+aexp: 	VAR                          { Var $1}
     | INTEGER                      { Constant($1) }
     | LOC			   { Loc($1) }
     | aexp PLUS aexp 		   { Plus($1, $3) }
@@ -91,4 +95,6 @@ sexp: LITERAL			   { Literal($1) }
 texp: LPAREN exp COMMA exp RPAREN  { Tuple ($2, $4) }
     | FST exp			   { Fst($2) }
     | SND exp			   { Snd($2) }
-loc : INTEGER			   { Loc $1}
+arrexp: 
+      exp ARRAY		   { Index($1, $2) }
+    

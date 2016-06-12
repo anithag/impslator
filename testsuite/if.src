@@ -1,0 +1,10 @@
+
+y1:int_high; z:int_low
+
+z:=1;
+if y1==1 then
+	skip
+else
+	y1:= z + 2
+fi;
+y1:=0

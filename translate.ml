@@ -217,5 +217,6 @@ and printeexp oc  (model, e) = match e with
   | EFst e   -> Printf.fprintf oc "fst %a" printeexp (model, e)
   | ESnd e   -> Printf.fprintf oc "snd %a" printeexp (model, e)
   | ELoc (_, l) ->Printf.fprintf oc "l%d" l
+  | EIndex(_,e', idx) ->Printf.fprintf oc "%a[%d]" printeexp (model, e') idx
   | EDeref e -> Printf.fprintf oc "*%a" printeexp (model, e)
   | EIsunset x -> Printf.fprintf oc "isunset(%s)" x

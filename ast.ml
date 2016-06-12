@@ -26,7 +26,7 @@ type cndset = VarSet.t
 type eidset = var list
 type killset = var list
 
-type varloc = Reg of var | Mem of int 
+type varloc = Reg of var | Mem of int | Arr of int
 
 (* maps with variables and locations as keys *)
 module VarLocMap = Map.Make(struct
@@ -39,8 +39,9 @@ type basetype =
     BtInt                             (* int *)
   | BtBool                            (* bool *)
   | BtString			      (* string *)
-  | BtPair of basetype * basetype      (* Tuple *)
   | BtCond                            (* cond *)
+  | BtPair of basetype * basetype     (* Tuple *)
+  | BtArray of int * labeltype	      (* Array size and type *)
   | BtRef of labeltype		     (* tau ref *)
   | BtFunc of context * policy * cndset * context	     (* func *)
 
@@ -70,6 +71,7 @@ and exp =
   | Neq of exp * exp                (* e1 != e2 *) 
   | Fst of exp			    (* #1 (a, b) *)	
   | Snd of exp			    (* #2 (a, b) *)
+  | Index of exp * int		    (* a[idx], unlike C style, this expression results in lvalue only  *)
   | Deref of exp
   | Isunset of var
   
@@ -79,7 +81,7 @@ stmt =
   | Skip
   | Assign of var * exp
   | Declassify of var * exp
-  | Update of exp * exp
+  | Update of exp * exp		     (* l <- e OR  l[idx] <- e *)  
   | Seq of stmt * stmt
   | While of  exp * stmt
   | Output of channel * exp
@@ -96,6 +98,7 @@ type encbasetype =
   | EBtBool                            (* bool *)
   | EBtString                          (* string *)
   | EBtPair of encbasetype * encbasetype       (* tuple *)
+  | EBtArray of mode * int * enclabeltype      (* Array size and type *)
   | EBtCond of mode                    (* cond *)
   | EBtRef of mode * enclabeltype      (* tau ref *)
   | EBtFunc of mode* enccontext* killset*policy * cndset * enccontext*killset   (* func *)
@@ -115,16 +118,17 @@ type encexp =
   | ELoc of mode * int 		     (* l^ mode *)
   | ELam of mode * enccontext *killset * policy* cndset * enccontext*killset * policy*encstmt (* First mode|-lambda^mode(gpre,killpre, p,u, gpost, killpost, q, s) *)
   | EConstant of int                  (* n *)
-  | ELiteral of string		 	(* str literal *)
+  | ELiteral of string		      (* str literal *)
   | ETuple of encexp * encexp	      (* enc tuple *)
   | EPlus of encexp * encexp          (* e1 + e2 *)
   | EModulo of encexp * encexp        (* e1 % e2 *)
-  | ETrue 				(* true *)
-  | EFalse 				(* false *)
-  | EEq of encexp * encexp            (* e1 = e2 *) 
+  | ETrue 			      (* true *)
+  | EFalse 			       (* false *)
+  | EEq of encexp * encexp             (* e1 = e2 *) 
   | ENeq of encexp * encexp            (* e1 != e2 *) 
   | EFst of encexp
   | ESnd of encexp
+  | EIndex of mode * encexp * int    (* a[idx], unlike C style, this expression results in lvalue only  *)
   | EDeref of encexp
   | EIsunset of var
 

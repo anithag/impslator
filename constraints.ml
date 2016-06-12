@@ -75,7 +75,7 @@ and join_enc_context (g1, g2) =
 let rec get_exp_type (g:context) (e:exp) : labeltype =
   match e with
    | Var x -> (try VarLocMap.find (Reg x) g with Not_found -> raise TypeNotFoundError)
-   | Loc l -> (try VarLocMap.find (Mem l) g with Not_found -> raise TypeNotFoundError)
+   | Loc l -> (try VarLocMap.find (Mem l) g with Not_found -> (try VarLocMap.find (Arr l) g with Not_found -> raise TypeNotFoundError))
    | Lam(gpre, p,u, gpost,q, s) -> (BtFunc(gpre, p,u, gpost), q)
    | Constant n -> (BtInt, Low)
    | Literal  s -> (BtString, Low)
@@ -89,6 +89,10 @@ let rec get_exp_type (g:context) (e:exp) : labeltype =
    | Fst e   -> (get_exp_type g e)
    | Snd e   -> (get_exp_type g e)
    | Isunset x -> (BtBool, Low)
+   | Index (e1, i) -> begin match (get_exp_type g e1) with
+		  | (BtArray (s, lt), p) -> (BtRef lt, p)
+		  | _  -> raise TypeError
+		 end
    | Deref e1   -> begin match (get_exp_type g e1) with
 		  | ((BtRef lt), p) -> (fst lt, join ((snd lt), p))
 		  | _  -> raise TypeError
@@ -103,6 +107,9 @@ let rec translatetype (s:labeltype)  =
 	| (BtString, p) -> ((EBtString, p), TConstraints.empty)
 	| (BtPair (b1, b2), p) -> ((EBtPair (fst(fst (translatetype (b1,p))), fst(fst (translatetype (b2, p)))), p), TConstraints.empty)
 	| (BtCond, p) -> let mu = next_tvar () in ((EBtCond mu, p), (TConstraints.add (Enclaveid mu) TConstraints.empty))
+	| (BtArray (size, b), p) -> let mu = next_tvar () in
+			 let (b', c) = (translatetype b) in
+			((EBtArray(mu, size, b'), p), (TConstraints.add (Enclaveid mu) c))
 	| (BtRef b, p)-> let mu = next_tvar () in
 			 let (b', c) = (translatetype b) in
 			((EBtRef(mu, b'), p), (TConstraints.add (Enclaveid mu) c))
@@ -129,6 +136,7 @@ and translategamma (g:context) =
 	let gencloc = (VarLocMap.filter (fun key a -> begin match key with
 					| Reg x -> false
 					| Mem l -> true
+					| Arr l -> true
 					end ) genc) in
 	let allloc = VarLocMap.bindings gencloc in
 	let rec loop loclist c delta = begin match loclist with
@@ -136,7 +144,10 @@ and translategamma (g:context) =
 		|(Mem l, (EBtRef(mu, (_, Low)), _))::tail -> loop tail c  delta
 		|(Mem l, (EBtRef(mu, (_, _)), _))::tail -> let delta' = VarLocMap.add (Mem l) mu delta in
 							    loop tail (TConstraints.add (ModeisN(mu, 1)) c) delta'
-		| _::tail -> raise (TranslationError "Only Mem bindings are allowed")
+		|(Arr l, (EBtArray(mu, i, (_, Low)), _))::tail -> loop tail c  delta
+		|(Arr l, (EBtArray(mu, i, (_, _)), _))::tail -> let delta' = VarLocMap.add (Arr l) mu delta in
+							    loop tail (TConstraints.add (ModeisN(mu, 1)) c) delta'
+		| _::tail -> raise (TranslationError "Only Mem/Array bindings are allowed")
 		end in 
 	let (c1, delta) = loop allloc c (VarLocMap.empty) in
 	(c1, delta, genc)
@@ -145,7 +156,7 @@ and translategamma (g:context) =
 let rec get_enc_exp_type (genc:enccontext) (e:encexp) : enclabeltype =
   match e with
    | EVar x  -> (try VarLocMap.find (Reg x) genc with Not_found -> raise TypeNotFoundError)
-   | ELoc(mu, l) -> (try VarLocMap.find (Mem l) genc with Not_found -> raise TypeNotFoundError)
+   | ELoc(mu, l) -> (try VarLocMap.find (Mem l) genc with Not_found -> (try VarLocMap.find (Arr l) genc with Not_found -> raise TypeNotFoundError))
    | ELam(mu, gpre, kpre, p,u, gpost, kpost, q,s) -> (EBtFunc(mu,gpre, kpre, p,u, gpost, kpost), q) 
    | EConstant n -> (EBtInt, Low)
    | ELiteral s -> (EBtString, Low)
@@ -159,6 +170,10 @@ let rec get_enc_exp_type (genc:enccontext) (e:encexp) : enclabeltype =
    | EFst e   -> (get_enc_exp_type genc e)
    | ESnd e   -> (get_enc_exp_type genc e)
    | EIsunset x -> (EBtBool, Low)
+   | EIndex (mu, e1, i) -> begin match (get_enc_exp_type genc e1) with
+		  | (EBtArray (mu, s, b), p) -> (EBtRef (mu,b), p)
+		  | _  -> raise TypeError
+		 end
    | EDeref  e   -> begin match (get_enc_exp_type genc e) with
 		  | (EBtRef(_, lt), p) -> (fst lt, join ((snd lt), p))
 		  | _  -> raise TypeError
@@ -723,10 +738,24 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		 let texp = TExp(srcgamma,e,srctype, mu,gamma',delta',ence,enctype) in
 		  (c, texp)
  | Loc l        -> 
-		    (* bindings should exist *)
-		    let enctype = (VarLocMap.find (Mem l) gamma) in
+		    (* bindings should exist: Either Ref or Array *)
+		    let enctype = (try VarLocMap.find (Mem l) gamma with Not_found -> (VarLocMap.find (Arr l) gamma)) in
 		    let mu' = get_mode enctype in
 		    let ence = ELoc(mu', l) in
+		    (* gamma and delta need not be updated *)
+		    let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
+		    (TConstraints.empty, texp)
+ |Index (e', i) -> 
+		    let b = get_exp_type srcgamma e' in 
+		    let c1, texp' = gen_constraints_exp srcgamma e' b mu gamma delta  in
+		    let ence' = get_translated_exp texp' in
+		    let gamma' = get_translated_exp_gamma texp' in
+
+		    let enctype' = get_enc_exp_type gamma' ence' in
+		    let mu' = get_mode enctype' in
+		    let ence = EIndex(mu', ence', i) in
+		    let enctype = get_enc_exp_type gamma' ence in 
+
 		    (* gamma and delta need not be updated *)
 		    let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
 		    (TConstraints.empty, texp)
@@ -750,7 +779,7 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 
 		 let texp = TExp(srcgamma,e,srctype, mu,gamma',delta',ence,enctype) in
 		  (c2, texp)
- | Isunset x ->
+ |Isunset x ->
 		    (* srctype is (cond ref, low) *)
 		    let (enctype, gamma', c) = if (VarLocMap.mem (Reg x) gamma) then 
 		    				(VarLocMap.find (Reg x) gamma, gamma, TConstraints.empty) 
