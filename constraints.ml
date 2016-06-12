@@ -79,12 +79,15 @@ let rec get_exp_type (g:context) (e:exp) : labeltype =
    | Lam(gpre, p,u, gpost,q, s) -> (BtFunc(gpre, p,u, gpost), q)
    | Constant n -> (BtInt, Low)
    | Literal  s -> (BtString, Low)
+   | Tuple (e1, e2) -> (BtPair (fst (get_exp_type g e1), fst (get_exp_type g e2)), join (snd (get_exp_type g e1), snd (get_exp_type g e2)))
    | True    -> (BtBool, Low)
    | False -> (BtBool, Low)
    | Eq(e1, e2)
    | Neq(e1, e2) -> (BtBool, join (snd (get_exp_type g e1), snd (get_exp_type g e2)))
    | Plus(e1, e2) 
    | Modulo(e1, e2) -> (BtInt, join (snd (get_exp_type g e1), snd (get_exp_type g e2)))
+   | Fst e   -> (get_exp_type g e)
+   | Snd e   -> (get_exp_type g e)
    | Isunset x -> (BtBool, Low)
    | Deref e1   -> begin match (get_exp_type g e1) with
 		  | ((BtRef lt), p) -> (fst lt, join ((snd lt), p))
@@ -98,6 +101,7 @@ let rec translatetype (s:labeltype)  =
 	| (BtInt, p ) -> ((EBtInt, p), TConstraints.empty)
 	| (BtBool, p) -> ((EBtBool, p), TConstraints.empty)
 	| (BtString, p) -> ((EBtString, p), TConstraints.empty)
+	| (BtPair (b1, b2), p) -> ((EBtPair (fst(fst (translatetype (b1,p))), fst(fst (translatetype (b2, p)))), p), TConstraints.empty)
 	| (BtCond, p) -> let mu = next_tvar () in ((EBtCond mu, p), (TConstraints.add (Enclaveid mu) TConstraints.empty))
 	| (BtRef b, p)-> let mu = next_tvar () in
 			 let (b', c) = (translatetype b) in
@@ -138,25 +142,6 @@ and translategamma (g:context) =
 	(c1, delta, genc)
  
  
-let rec get_src_exp_type (g:context) (e:exp) : labeltype =
-  match e with
-   | Var x -> (try VarLocMap.find (Reg x) g with Not_found -> raise TypeNotFoundError)
-   | Loc l -> (try VarLocMap.find (Mem l) g with Not_found -> raise TypeNotFoundError)
-   | Lam(gpre, p,u, gpost,q, s) -> (BtFunc(gpre, p,u, gpost), q)
-   | Constant n -> (BtInt, Low)
-   | Literal s -> (BtString, Low)
-   | True    -> (BtBool, Low)
-   | False -> (BtBool, Low)
-   | Eq(e1, e2)
-   | Neq(e1, e2) -> (BtBool, join (snd (get_exp_type g e1), snd (get_exp_type g e2)))
-   | Plus(e1, e2) 
-   | Modulo(e1, e2) -> (BtInt, join (snd (get_exp_type g e1), snd (get_exp_type g e2)))
-   | Isunset x -> (BtBool, Low)
-   | Deref e1   -> begin match (get_exp_type g e1) with
-		  | ((BtRef lt), p) -> (fst lt, join ((snd lt), p))
-		  | _  -> raise TypeError
-		 end
- 
 let rec get_enc_exp_type (genc:enccontext) (e:encexp) : enclabeltype =
   match e with
    | EVar x  -> (try VarLocMap.find (Reg x) genc with Not_found -> raise TypeNotFoundError)
@@ -164,12 +149,15 @@ let rec get_enc_exp_type (genc:enccontext) (e:encexp) : enclabeltype =
    | ELam(mu, gpre, kpre, p,u, gpost, kpost, q,s) -> (EBtFunc(mu,gpre, kpre, p,u, gpost, kpost), q) 
    | EConstant n -> (EBtInt, Low)
    | ELiteral s -> (EBtString, Low)
+   | ETuple(e1, e2) 	-> (EBtPair (fst (get_enc_exp_type genc e1), fst (get_enc_exp_type genc e2)), join (snd (get_enc_exp_type genc e1), snd (get_enc_exp_type genc e2)))
    | ETrue     -> (EBtBool, Low)
    | EFalse  -> (EBtBool, Low)
    | EEq(e1, e2) 
    | ENeq(e1, e2) -> (EBtBool, join (snd (get_enc_exp_type genc e1), snd (get_enc_exp_type genc e2)))
    | EPlus(e1, e2) 
    | EModulo(e1, e2) -> (EBtInt, join (snd (get_enc_exp_type genc e1 ), snd (get_enc_exp_type genc e2)))
+   | EFst e   -> (get_enc_exp_type genc e)
+   | ESnd e   -> (get_enc_exp_type genc e)
    | EIsunset x -> (EBtBool, Low)
    | EDeref  e   -> begin match (get_enc_exp_type genc e) with
 		  | (EBtRef(_, lt), p) -> (fst lt, join ((snd lt), p))
@@ -680,7 +668,61 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		  let ence = ELiteral s in
 		  let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
 		   (c, texp)
-  | Loc l        -> 
+  | Tuple (e1, e2)->
+		 let b1 = get_exp_type srcgamma e1 in 
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+
+		 (* Translate e1 *)
+		 let ence1 = get_translated_exp texp1 in
+		 let gamma1 = get_translated_exp_gamma texp1 in
+
+		 let b2 = get_exp_type srcgamma e2 in 
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+
+		 (* Translate e2 *)
+		 let ence2 = get_translated_exp texp2 in
+		 let gamma2 = get_translated_exp_gamma texp2 in
+
+		 let ence = ETuple (ence1, ence2) in
+		 let enctype = get_enc_exp_type gamma2 ence in 
+
+		 let texp = TExp(srcgamma,e,srctype, mu,gamma2,delta,ence,enctype) in
+		 (TConstraints.union c1 c2, texp)
+ | Fst e'	->
+		 let b = get_exp_type srcgamma e' in 
+		 let c, texp = gen_constraints_exp srcgamma e' b mu gamma delta  in
+
+		 (* Translate e' *)
+		 let ence' = get_translated_exp texp in
+		 let gamma' = get_translated_exp_gamma texp in
+
+		 (* REMOVE this: delta does not change *)
+		 let delta' = get_translated_exp_delta texp in
+		 let enclt = get_translated_exp_type texp in
+		
+		 let ence = (EFst ence') in
+		 let enctype = get_enc_exp_type gamma' ence in 
+
+		 let texp = TExp(srcgamma,e,srctype, mu,gamma',delta',ence,enctype) in
+		  (c, texp)
+ | Snd e'	->  
+		 let b = get_exp_type srcgamma e' in 
+		 let c, texp = gen_constraints_exp srcgamma e' b mu gamma delta  in
+
+		 (* Translate e' *)
+		 let ence' = get_translated_exp texp in
+		 let gamma' = get_translated_exp_gamma texp in
+
+		 (* REMOVE this: delta does not change *)
+		 let delta' = get_translated_exp_delta texp in
+		 let enclt = get_translated_exp_type texp in
+		
+		 let ence = (ESnd ence') in
+		 let enctype = get_enc_exp_type gamma' ence in 
+
+		 let texp = TExp(srcgamma,e,srctype, mu,gamma',delta',ence,enctype) in
+		  (c, texp)
+ | Loc l        -> 
 		    (* bindings should exist *)
 		    let enctype = (VarLocMap.find (Mem l) gamma) in
 		    let mu' = get_mode enctype in

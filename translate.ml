@@ -209,10 +209,13 @@ and printeexp oc  (model, e) = match e with
   | EModulo (l,r) -> Printf.fprintf oc "%a %% %a" printeexp (model, l) printeexp (model, r)
   | EConstant n -> Printf.fprintf oc "%d" n
   | ELiteral s -> Printf.fprintf oc "%s" s
+  | ETuple(f,s) -> Printf.fprintf oc "(%a, %a)" printeexp (model, f)  printeexp (model, s)
   | ETrue ->  Printf.fprintf oc "true"
   | EFalse -> Printf.fprintf oc "false"
   | EEq (l,r) -> Printf.fprintf oc "%a == %a" printeexp (model, l) printeexp (model, r)
   | ENeq (l,r) -> Printf.fprintf oc "%a != %a" printeexp (model, l) printeexp (model, r)
+  | EFst e   -> Printf.fprintf oc "fst %a" printeexp (model, e)
+  | ESnd e   -> Printf.fprintf oc "snd %a" printeexp (model, e)
   | ELoc (_, l) ->Printf.fprintf oc "l%d" l
   | EDeref e -> Printf.fprintf oc "*%a" printeexp (model, e)
   | EIsunset x -> Printf.fprintf oc "isunset(%s)" x

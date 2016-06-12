@@ -39,6 +39,7 @@ type basetype =
     BtInt                             (* int *)
   | BtBool                            (* bool *)
   | BtString			      (* string *)
+  | BtPair of basetype * basetype      (* Tuple *)
   | BtCond                            (* cond *)
   | BtRef of labeltype		     (* tau ref *)
   | BtFunc of context * policy * cndset * context	     (* func *)
@@ -60,12 +61,15 @@ and exp =
   | Lam of context * policy * cndset * context * policy * stmt   (* (lambda(G_pre, p, {}, G_post).stmt)_q *)
   | Constant of int                 (* n *)
   | Literal of string               (* string constants *)
+  | Tuple of exp * exp		    (* tuples *)
   | Plus of exp * exp               (* e1 + e2 *)
   | Modulo of exp * exp             (* e1 % e2 *)
   | True                            (* true *)
   | False                           (* false *)
   | Eq of exp * exp                 (* e1 = e2 *) 
   | Neq of exp * exp                (* e1 != e2 *) 
+  | Fst of exp			    (* #1 (a, b) *)	
+  | Snd of exp			    (* #2 (a, b) *)
   | Deref of exp
   | Isunset of var
   
@@ -91,6 +95,7 @@ type encbasetype =
     EBtInt                             (* int *)
   | EBtBool                            (* bool *)
   | EBtString                          (* string *)
+  | EBtPair of encbasetype * encbasetype       (* tuple *)
   | EBtCond of mode                    (* cond *)
   | EBtRef of mode * enclabeltype      (* tau ref *)
   | EBtFunc of mode* enccontext* killset*policy * cndset * enccontext*killset   (* func *)
@@ -111,12 +116,15 @@ type encexp =
   | ELam of mode * enccontext *killset * policy* cndset * enccontext*killset * policy*encstmt (* First mode|-lambda^mode(gpre,killpre, p,u, gpost, killpost, q, s) *)
   | EConstant of int                  (* n *)
   | ELiteral of string		 	(* str literal *)
+  | ETuple of encexp * encexp	      (* enc tuple *)
   | EPlus of encexp * encexp          (* e1 + e2 *)
   | EModulo of encexp * encexp        (* e1 % e2 *)
   | ETrue 				(* true *)
   | EFalse 				(* false *)
   | EEq of encexp * encexp            (* e1 = e2 *) 
   | ENeq of encexp * encexp            (* e1 != e2 *) 
+  | EFst of encexp
+  | ESnd of encexp
   | EDeref of encexp
   | EIsunset of var
 

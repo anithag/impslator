@@ -36,6 +36,8 @@ rule token = parse
 | "true"  { TRUE } 
 | "false" { FALSE }
 | "isunset" {ISUNSET}
+| "fst"    {FST}
+| "snd"	   {SND}
 | "skip"  { SKIP }
 | "if"    { IF }
 | "then"  { THEN }
