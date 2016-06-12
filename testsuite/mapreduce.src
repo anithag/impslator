@@ -1,0 +1,77 @@
+l1[3]: string_high;
+l2[5]: string_high;
+l3[5]: (string, int)_high;
+doc[5]: string_high;
+pc[8]: (string, int)_high;
+
+len  : int_high;
+idx: int_high;
+tmp1: int_low;
+tmp2: int_low;
+sum : int_high;
+key : string_high
+
+l1[0] <- "hello";
+l1[1] <- "world";
+l1[1] <- "hello";
+
+l2[0] <- "hello";
+l2[1] <- "world";
+l2[2] <- "hello";
+l2[3] <- "world";
+l2[4] <- "hello";
+
+
+len:=3;
+idx := 0;
+pcidx := 0;
+doc := l1;
+pc := l3;
+
+map := (lambda(high, {}, high). 
+		while idx < len do 
+			pc[pcidx] = (doc[idx], 1) 
+			pcidx := pcidx + 1;
+			idx   := idx + 1
+		done
+	)
+
+
+
+call(map);
+
+idx := 0;
+pcidx := len;
+len:= 5;
+doc := l2;
+
+call(map);
+
+idx := 0;
+len := 5 + 3;
+
+reduce := (lambda(high, {}, high). 
+		while idx < len do 
+			sum := 0;
+			key := fst pc[idx];
+			tmpidx := 0;
+			if key != "-1" then
+				while tmpidx < len do
+					tmp1 := fst pc[tmpidx];
+					if key == tmp1  then
+						tmp2 := snd pc[tmpidx];
+						sum := sum + tmp2;
+						tmp1 := "-1";
+						pc[idx] <- (key, sum);
+						pc[tmpidx] <- (tmp1, 0); 
+					else
+						skip
+					fi;
+					tmpidx := tmpidx + 1
+				done
+			else
+				skip
+			fi;
+			idx := idx + 1	
+		done)
+
