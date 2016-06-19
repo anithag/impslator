@@ -1,7 +1,10 @@
-y1:([2] (string, int)_high)_high; 
-l1[2]:(string, int)_high;
-l2[2]:(string, int)_low
+y1:((string, int)_high [2])_high; 
+l1:((string, int)_high [2])_high ref_low;
+l2:((string, int)_high [2])_low ref_low;
+l3: (string, int)_low ref_low;
+l4: (string, int)_low ref_low
 
-y1[0] <- (*l1[0]);
-y1[1] <- (*l1[1]);
+l1 <-(l3, l4);
+y1[1] <- (*l1)[1];
+y1[0] <- (*l1)[0];
 y1 := l2

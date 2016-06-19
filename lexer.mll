@@ -15,7 +15,7 @@ let digit = ['0'-'9']
 let id = ['a'-'z'] ['a'-'z' '0'-'9' '-']*
 let ws = [' ' '\t']
 let location =['l']['0'-'9']* 
-let literal = ['"']['a'-'z' '0'-'9']*['"']
+let literal = ['"']['a'-'z' '0'-'9' '-']*['"']
 let array  = ['[']['0'-'9']*[']']
 
 rule token = parse
@@ -25,6 +25,7 @@ rule token = parse
 | "!="     { NEQUALS }
 | "+"     { PLUS }
 | "%"     { MODULO  }
+| "<"	  { LESSTHAN}
 | "("     { LPAREN }
 | ")"     { RPAREN }
 | "{"	  {LCURLY}
@@ -68,7 +69,7 @@ rule token = parse
 | "L"|"H" as channel {CHANNEL(channel)}
 | "~"    { ERASE}
 | location as l {LOC(int_of_string (String.sub l 1 ((String.length l)-1)))}
-| array as arr {ARRAY(int_of_string (String.sub arr 1 ((String.length arr)-2)))}
+(* | array as arr {ARRAY(int_of_string (String.sub arr 1 ((String.length arr)-2)))} *)
 | literal as strlit {LITERAL(strlit)}
 | id as v { VAR(v) }
 | "*"     { DEREF }

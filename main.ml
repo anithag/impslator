@@ -32,7 +32,7 @@ let () =
 
   (* HACK: let delta be VarLocMap instead of LocMap for quick hack *)
   let (c0, delta, genc) = (Constraints.translategamma gammasrc) in
-  let c, tstmt = (Constraints.gen_constraints_stmt Low gammasrc VarSet.empty stmt mu0 genc k delta) in
+  let c, tstmt = (Constraints.gen_constraints_stmt Low gammasrc VarSet.empty stmt mu0 genc k delta) true in
 
   let c = TConstraints.union c c0  in
 

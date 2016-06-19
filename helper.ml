@@ -85,6 +85,13 @@ let rec check_src_base_type b1 b2 = match (b1, b2) with
   | BtInt, BtInt -> true
   | BtBool, BtBool -> true
   | BtCond, BtCond -> true
+  | BtString, BtString -> true
+  | BtArray (n1, lt1), BtArray (n2, lt2) -> if n1 = n2 then check_src_base_type (fst lt1) (fst lt2)
+					    else false
+  | BtPair (bp11, bp12), BtPair (bp21, bp22) -> let fsteq = check_src_base_type bp11 bp21 in
+						let sndeq = check_src_base_type bp12 bp22 in
+						if fsteq && sndeq then true
+						else false
   | _ ,_ -> false (* int, bool, cond *)
 
 (* Check if base types are same. What about rho? 
@@ -112,6 +119,13 @@ let rec check_enc_base_type b1 b2 = match (b1, b2) with
   | EBtInt, EBtInt -> true
   | EBtBool, EBtBool -> true
   | EBtCond rho1, EBtCond rho2 -> true
+  | EBtString, EBtString -> true
+  | EBtArray (mu1, n1, lt1), EBtArray (mu2, n2, lt2) -> if n1 = n2 then check_enc_base_type (fst lt1) (fst lt2)
+							else false
+  | EBtPair (bp11, bp12), EBtPair (bp21, bp22) -> let fsteq = check_enc_base_type bp11 bp21 in
+						let sndeq = check_enc_base_type bp12 bp22 in
+						if fsteq && sndeq then true
+						else false
   | _ ,_ -> false (* int, bool, cond *)
 (* ---------- FRESH TYPE VARIABLES ---------- *)
 let tvar_cell = ref 1

@@ -1,77 +1,97 @@
-l1[3]: string_high;
-l2[5]: string_high;
-l3[5]: (string, int)_high;
-doc[5]: string_high;
-pc[8]: (string, int)_high;
+l1: (string_high [3])_high ref_low;
+l2: (string_high [5])_high ref_low;
+l3: ((string, int)_high [5])_high ref_low;
+doc: (string_high [5])_low;
+pc: ((string, int)_high [8])_low;
 
-len  : int_high;
-idx: int_high;
+len  : int_low;
+idx: int_low;
+tmpidx: int_low;
+pcidx: int_high;
 tmp1: int_low;
 tmp2: int_low;
 sum : int_high;
-key : string_high
+key : string_high;
+map : func({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low})_high;
+reduce : func({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low})_high
 
-l1[0] <- "hello";
-l1[1] <- "world";
-l1[1] <- "hello";
+(*l1)[0] <- "hello";
+(*l1)[1] <- "world";
+(*l1)[2] <- "hello";
 
-l2[0] <- "hello";
-l2[1] <- "world";
-l2[2] <- "hello";
-l2[3] <- "world";
-l2[4] <- "hello";
+(*l2)[0] <- "hello";
+(*l2)[1] <- "world";
+(*l2)[2] <- "hello";
+(*l2)[3] <- "world";
+(*l2)[4] <- "hello";
 
 
 len:=3;
 idx := 0;
 pcidx := 0;
-doc := l1;
-pc := l3;
+doc := (*l1);
+pc := (*l3);
 
-map := (lambda(high, {}, high). 
+map := (lambda({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low}). 
 		while idx < len do 
-			pc[pcidx] = (doc[idx], 1) 
+			pc[pcidx] <- ((*doc[idx]), 1); 
 			pcidx := pcidx + 1;
 			idx   := idx + 1
-		done
-	)
-
-
+		end;
+		skip	
+	)_high;
 
 call(map);
 
 idx := 0;
 pcidx := len;
 len:= 5;
-doc := l2;
+doc := (*l2);
 
 call(map);
 
 idx := 0;
 len := 5 + 3;
 
-reduce := (lambda(high, {}, high). 
+reduce := (lambda({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_high}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_high}).
 		while idx < len do 
 			sum := 0;
-			key := fst pc[idx];
+			key := fst (*pc[idx]);
 			tmpidx := 0;
 			if key != "-1" then
 				while tmpidx < len do
-					tmp1 := fst pc[tmpidx];
+					tmp1 := fst (*pc[tmpidx]);
 					if key == tmp1  then
-						tmp2 := snd pc[tmpidx];
+						tmp2 := snd (*pc[tmpidx]);
 						sum := sum + tmp2;
 						tmp1 := "-1";
 						pc[idx] <- (key, sum);
-						pc[tmpidx] <- (tmp1, 0); 
+						pc[tmpidx] <- (tmp1, 0) 
 					else
+						skip;
 						skip
 					fi;
 					tmpidx := tmpidx + 1
-				done
+				end;
+				skip
 			else
+				skip;
 				skip
 			fi;
 			idx := idx + 1	
-		done)
+		end;
+		skip
+		)_high;
+call(reduce);
+len  :=0;
+tmp1:=0;
+tmp2:=0;
+sum := 0;
+key :="0";
+pcidx:= 0;
+idx:=0;
+tmpidx:=0;
+map := (lambda({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, low, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low}).skip;skip)_low; 
+reduce := (lambda({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_low}, low, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_low}).skip;skip)_low;
+skip
 

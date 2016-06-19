@@ -26,7 +26,7 @@ type cndset = VarSet.t
 type eidset = var list
 type killset = var list
 
-type varloc = Reg of var | Mem of int | Arr of int
+type varloc = Reg of var | Mem of int 
 
 (* maps with variables and locations as keys *)
 module VarLocMap = Map.Make(struct
@@ -63,15 +63,17 @@ and exp =
   | Constant of int                 (* n *)
   | Literal of string               (* string constants *)
   | Tuple of exp * exp		    (* tuples *)
+  | Array of int list		    (* list of locations: using int to denote locations *)
   | Plus of exp * exp               (* e1 + e2 *)
   | Modulo of exp * exp             (* e1 % e2 *)
   | True                            (* true *)
   | False                           (* false *)
   | Eq of exp * exp                 (* e1 = e2 *) 
   | Neq of exp * exp                (* e1 != e2 *) 
+  | Lt of exp * exp                 (* e1 < e2 *) 
   | Fst of exp			    (* #1 (a, b) *)	
   | Snd of exp			    (* #2 (a, b) *)
-  | Index of exp * int		    (* a[idx], unlike C style, this expression results in lvalue only  *)
+  | Index of exp * exp		    (* a[idx], unlike C style, this expression results in lvalue only  *)
   | Deref of exp
   | Isunset of var
   
@@ -119,6 +121,7 @@ type encexp =
   | ELam of mode * enccontext *killset * policy* cndset * enccontext*killset * policy*encstmt (* First mode|-lambda^mode(gpre,killpre, p,u, gpost, killpost, q, s) *)
   | EConstant of int                  (* n *)
   | ELiteral of string		      (* str literal *)
+  | EArray of mode* (int list)	      (* []^mode *)
   | ETuple of encexp * encexp	      (* enc tuple *)
   | EPlus of encexp * encexp          (* e1 + e2 *)
   | EModulo of encexp * encexp        (* e1 % e2 *)
@@ -126,9 +129,10 @@ type encexp =
   | EFalse 			       (* false *)
   | EEq of encexp * encexp             (* e1 = e2 *) 
   | ENeq of encexp * encexp            (* e1 != e2 *) 
+  | ELt of encexp * encexp            (* e1 < e2 *) 
   | EFst of encexp
   | ESnd of encexp
-  | EIndex of mode * encexp * int    (* a[idx], unlike C style, this expression results in lvalue only  *)
+  | EIndex of mode * encexp * encexp    (* a[idx], unlike C style, this expression results in lvalue only  *)
   | EDeref of encexp
   | EIsunset of var
 
