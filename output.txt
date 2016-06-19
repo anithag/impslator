@@ -1,29 +1,59 @@
-l1 <- (l11,l12,l13,l14,l15,) ;
-l3 <- (l31,l32,l33,l34,l35,) ;
-name:= *l1;
-select:= *l3;
-key:= "alice";
+len:= 3;
 idx:= 0;
-while idx < 5 do 
- If *name[idx] == key then 
- select[idx] <- 1 ;
-skip;
- 
- else 
- select[idx] <- 0 ;
-skip;
-; 
+pcidx:= 0;
+l1 <- (l11,l12,l13,) ;
+l2 <- (l21,l22,l23,l24,l25,) ;
+l3 <- (l31,l32,l33,l34,l35,) ;
+l11 <- "hello" ;
+l12 <- "world" ;
+l13 <- "hello" ;
+l21 <- "hello" ;
+l22 <- "world" ;
+l23 <- "hello" ;
+l24 <- "world" ;
+l25 <- "hello" ;
+enclave(1, 
+ doc:= *l1;
+pc:= *l3;
+map:= (lambda^(1, 1)(_,_,_,_,_).while idx < len do 
+ pc[pcidx] <- (*doc[idx], 1) ;
+pcidx:= pcidx + 1;
 idx:= idx + 1;
  
- done
-enclave(1, 
- amount:= *l2;
-l2 <- (l21,l22,l23,l24,l25,) ;
-sum:= 0;
+ end;
+skip;
+);
+call(map);
 idx:= 0;
-while idx < 5 do 
- If *select[idx] == 1 then 
- sum:= sum + *amount[idx];
+pcidx:= len;
+);
+len:= 5;
+enclave(1, 
+ doc:= *l2;
+call(map);
+idx:= 0;
+len:= 5 + 3;
+reduce:= (lambda^(1, 1)(_,_,_,_,_).while idx < len do 
+ sum:= 0;
+key:= fst *pc[idx];
+tmpidx:= 0;
+if key != "-1" then 
+ while tmpidx < len do 
+ tmp1:= fst *pc[tmpidx];
+if key == tmp1 then 
+ tmp2:= snd *pc[tmpidx];
+sum:= sum + tmp2;
+tmp1:= "-1";
+pc[idx] <- (key, sum) ;
+pc[tmpidx] <- (tmp1, 0) ;
+ 
+ else 
+ skip;
+skip;
+; 
+tmpidx:= tmpidx + 1;
+ 
+ end;
 skip;
  
  else 
@@ -32,7 +62,29 @@ skip;
 ; 
 idx:= idx + 1;
  
- donesum:= 0;
-amount:= *l3;
-)kill(0);
+ end;
+skip;
+);
+call(reduce);
+len:= 0;
+tmp1:= 0;
+tmp2:= 0;
+sum:= 0;
+key:= "0";
+pcidx:= 0;
+idx:= 0;
+tmpidx:= 0;
+);
+map:= (lambda^(0, 1)(_,_,_,_,_).skip;
+skip;
+kill(0);
+kill(1);
+);
+reduce:= (lambda^(0, 1)(_,_,_,_,_).skip;
+skip;
+kill(0);
+kill(1);
+);
+skip;
+kill(0);
 kill(1);

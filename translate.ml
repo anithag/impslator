@@ -56,7 +56,7 @@ let printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model
 	| TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _,  gamma', k')::tail->
 		let isnextmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 		let _ = if (not isoutermodeenc)&&(iscurmodeenc)&&(not isnextmodeenc) then
-				Printf.fprintf oc ")"
+				Printf.fprintf oc ");\n"
 			else
 				()
 			in printkill oc (model, k, prevk')
@@ -143,24 +143,24 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 			| TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k')::tail -> 
 						let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
-							Printf.fprintf oc "If %a then \n %a \n else \n %a; \n" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
+							Printf.fprintf oc "if %a then \n %a \n else \n %a; \n" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
 							else if (not isoutermodeenc && isprevmodeenc && not iscurmodeenc) then
-							Printf.fprintf oc ");\n If %a then \n %a \n else \n %a; \n" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
+							Printf.fprintf oc ");\n if %a then \n %a \n else \n %a; \n" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								let id = get_enclave_id model mu in
-							Printf.fprintf oc "enclave(%d, \n If %a then \n %a \n else \n %a;\n" id printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
+							Printf.fprintf oc "enclave(%d, \n if %a then \n %a \n else \n %a;\n" id printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
 						in
 						let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 						loop isoutermodeenc iscurmodeenc tail
 			| TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k')::tail ->
 						let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
-								Printf.fprintf oc "while %a do \n %a \n done" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
+								Printf.fprintf oc "while %a do \n %a \n end;\n" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
 							else if (not isoutermodeenc && isprevmodeenc && not iscurmodeenc) then
-								Printf.fprintf oc ");\n while %a do \n %a \n done" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
+								Printf.fprintf oc ");\n while %a do \n %a \n end;\n" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 								let id = get_enclave_id model mu in
-								Printf.fprintf oc "enclave(%d, \n while %a do \n %a \n done" id printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
+								Printf.fprintf oc "enclave(%d, \n while %a do \n %a \n end;\n" id printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
 							in
 							let _ = printEnclaveend oc (isoutermodeenc, isprevmodeenc, iscurmodeenc, tail, model, k', seqk') in
 							loop isoutermodeenc iscurmodeenc tail
@@ -227,17 +227,17 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 | TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k')-> 
 			let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 			if (isoutermodeenc)|| (not iscurmodeenc) then
-				Printf.fprintf oc "If %a then \n %a \n else \n %a" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
+				Printf.fprintf oc "if %a then \n %a \n else \n %a" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
 			else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 				let id = get_enclave_id model mu in
-				Printf.fprintf oc "enclave(%d, \n If %a then \n %a \n else \n %a)\n" id  printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
+				Printf.fprintf oc "enclave(%d, \n if %a then \n %a \n else \n %a)\n" id  printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, ttrue) printEncProgram (model, iscurmodeenc, tfalse) 
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k')->
 			let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 			if (isoutermodeenc)|| (not iscurmodeenc) then
-				Printf.fprintf oc "while %a do \n %a \n done \n" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
+				Printf.fprintf oc "while %a do \n %a \n end \n" printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
 			else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
 				let id = get_enclave_id model mu in
-				Printf.fprintf oc "enclave(%d, \n while %a do \n %a \n done) \n" id printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
+				Printf.fprintf oc "enclave(%d, \n while %a do \n %a \n end) \n" id printeexp (model, encexp) printEncProgram  (model, iscurmodeenc, tbody) 
 | TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp,  gamma', k')->
 			let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 			if (isoutermodeenc)|| (not iscurmodeenc) then

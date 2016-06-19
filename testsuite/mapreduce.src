@@ -1,34 +1,57 @@
 l1: (string_high [3])_high ref_low;
 l2: (string_high [5])_high ref_low;
 l3: ((string, int)_high [5])_high ref_low;
+l11: string_high ref_low;
+l12: string_high ref_low;
+l13: string_high ref_low;
+
+l21: string_high ref_low;
+l22: string_high ref_low;
+l23: string_high ref_low;
+l24: string_high ref_low;
+l25: string_high ref_low;
+
+l31: (string, int)_high ref_low;
+l32: (string, int)_high ref_low;
+l33: (string, int)_high ref_low;
+l34: (string, int)_high ref_low;
+l35: (string, int)_high ref_low;
+
 doc: (string_high [5])_low;
 pc: ((string, int)_high [8])_low;
+
 
 len  : int_low;
 idx: int_low;
 tmpidx: int_low;
-pcidx: int_high;
+pcidx: int_low;
 tmp1: int_low;
 tmp2: int_low;
-sum : int_high;
-key : string_high;
-map : func({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low})_high;
-reduce : func({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low})_high
+sum : int_low;
+key : string_low;
 
-(*l1)[0] <- "hello";
-(*l1)[1] <- "world";
-(*l1)[2] <- "hello";
-
-(*l2)[0] <- "hello";
-(*l2)[1] <- "world";
-(*l2)[2] <- "hello";
-(*l2)[3] <- "world";
-(*l2)[4] <- "hello";
-
+map : func({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low})_low;
+reduce : func({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low})_low
 
 len:=3;
 idx := 0;
 pcidx := 0;
+
+l1 <- (l11, l12, l13);
+l2 <- (l21, l22, l23, l24, l25);
+l3 <- (l31, l32, l33, l34, l35);
+
+l11 <- "hello";
+l12 <- "world";
+l13 <- "hello";
+
+l21 <- "hello";
+l22 <- "world";
+l23 <- "hello";
+l24 <- "world";
+l25 <- "hello";
+
+
 doc := (*l1);
 pc := (*l3);
 
