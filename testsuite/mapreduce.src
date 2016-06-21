@@ -1,6 +1,6 @@
 l1: (string_high [3])_high ref_low;
 l2: (string_high [5])_high ref_low;
-l3: ((string, int)_high [5])_high ref_low;
+l3: ((string, int)_high [8])_high ref_low;
 l11: string_high ref_low;
 l12: string_high ref_low;
 l13: string_high ref_low;
@@ -19,6 +19,7 @@ l35: (string, int)_high ref_low;
 
 doc: (string_high [5])_low;
 pc: ((string, int)_high [8])_low;
+out: ((string, int)_high [8])_low;
 
 
 len  : int_low;
@@ -31,11 +32,8 @@ sum : int_low;
 key : string_low;
 
 map : func({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low})_low;
-reduce : func({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low})_low
+reduce : func({pc:((string, int)_high [8])_low; out:((string, int)_high [8])_low;len:int_low; idx:int_low; pcidx:int_low; outidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_high}, high, {}, {pc:((string, int)_high [8])_low; out:((string, int)_high [8])_low;idx:int_low; pcidx:int_low; outidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_high})_low
 
-len:=3;
-idx := 0;
-pcidx := 0;
 
 l1 <- (l11, l12, l13);
 l2 <- (l21, l22, l23, l24, l25);
@@ -52,8 +50,6 @@ l24 <- "world";
 l25 <- "hello";
 
 
-doc := (*l1);
-pc := (*l3);
 
 map := (lambda({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low}). 
 		while idx < len do 
@@ -64,48 +60,78 @@ map := (lambda({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx
 		skip	
 	)_high;
 
+(# Preparing to call map() on doc pointed to by l1 #)
+doc := (*l1);
+pc := (*l3);
+len:=3;
+idx := 0;
+pcidx := 0;
 call(map);
 
+(# Preparing to call map() on doc pointed to by l2 
+   Reset idx to 0
+   Set pcidx to the length of previous doc
+#)
 idx := 0;
 pcidx := len;
 len:= 5;
 doc := (*l2);
-
 call(map);
 
+
+(# Preparing to call reduce(). 'pc' has partial counts of all words in all documents #)
 idx := 0;
 len := 5 + 3;
+outidx := 0;
 
-reduce := (lambda({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_high}, high, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_high}).
+reduce := (lambda({pc:((string, int)_high [8])_low; out:((string, int)_high [8])_low;len:int_low; idx:int_low; pcidx:int_low; outidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_high}, high, {}, {pc:((string, int)_high [8])_low; out:((string, int)_high [8])_low;idx:int_low; pcidx:int_low; outidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_high}).
+		(# Algorithm:
+			1. Scan the 'pc' array from beginning and make each element key
+			2. Search for the 'key' in the remaining 'pc'.
+			3. Whenever a 'key' is found, increment the sum and mark the corresponding entry in 'pc' as invalid to avoid double counting
+			4. If the end of 'pc' is reached, write the 'sum' to out array and increment the output index 'outidx'
+			5. Reset the sum to zero and go to step 1
+		#)
 		while idx < len do 
-			sum := 0;
 			key := fst (*pc[idx]);
 			tmpidx := 0;
+			while tmpidx < len do
+				tmp1 := fst (*pc[tmpidx]);
+				if key == tmp1  then
+					tmp2 := snd (*pc[tmpidx]);
+					sum := sum + tmp2;
+					tmp1 := "-1";
+					pc[tmpidx] <- (tmp1, 0) 
+				else
+					skip;
+					skip
+				fi;
+				tmpidx := tmpidx + 1
+			end;
+			out[outidx] <- (key, sum);
+			
+			(# Increment output index only if the current key is valid #)
 			if key != "-1" then
-				while tmpidx < len do
-					tmp1 := fst (*pc[tmpidx]);
-					if key == tmp1  then
-						tmp2 := snd (*pc[tmpidx]);
-						sum := sum + tmp2;
-						tmp1 := "-1";
-						pc[idx] <- (key, sum);
-						pc[tmpidx] <- (tmp1, 0) 
-					else
-						skip;
-						skip
-					fi;
-					tmpidx := tmpidx + 1
-				end;
+				outidx := outidx +1;
 				skip
 			else
 				skip;
-				skip
+				skip	
 			fi;
-			idx := idx + 1	
+
+			(# Increment the index and invalid the current key. 
+			   Invalidating the current key is not important since 
+			   idx is incremented; but doing it for consistency
+			#)
+			idx := idx + 1;	
+			key := "-1";
+			sum := 0
 		end;
 		skip
 		)_high;
 call(reduce);
+
+(# Erasing Registers #)
 len  :=0;
 tmp1:=0;
 tmp2:=0;
@@ -114,6 +140,7 @@ key :="0";
 pcidx:= 0;
 idx:=0;
 tmpidx:=0;
+outidx:=0;
 map := (lambda({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, low, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low}).skip;skip)_low; 
 reduce := (lambda({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_low}, low, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_low}).skip;skip)_low;
 skip

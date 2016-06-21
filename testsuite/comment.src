@@ -1,0 +1,15 @@
+
+(# syntax for comments is weird. It uses HASH sign :( 
+ to avoid conflicts with deref operator
+ ....
+ blah..
+ #)
+
+y1:int_high; l1:int_high ref_low; z:int_low
+
+ (# Multiline comment
+	blah...
+	blah..
+	no quotes please..
+  #)
+ y1:= (*l1) ; y1:= 0; z := 1
