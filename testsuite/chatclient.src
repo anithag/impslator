@@ -1,5 +1,5 @@
 
-(# l1: log file #)
+(# l1: log file location. Has erasure policy H /clear T  #)
 l1: int_high~top,clear ref_low; 
 
 (# l2: location for recv mesg #)
@@ -40,7 +40,7 @@ erasechat := l9;
 	2. Continue polling if the user wants to exit
 	3. Continue polling if the user has joined a channel. If so
 	      Send and receive messages by writing to the log
-	      If user selects erasechat delete the chat log and quit the channel
+	      If user selects erasechat then delete the chat log and quit the channel
 #)
 while (*exit) == 1 do
 
@@ -49,6 +49,8 @@ while (*exit) == 1 do
 	if (*receive) == 1 then
 		recvmsg := (*l2);
 		log <- recvmsg;
+		displaymsg := "received";
+		output(L, displaymsg);
 		receive <- 0
 	else
 	  if (*send) == 1 then

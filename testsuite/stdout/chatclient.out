@@ -33,6 +33,8 @@ while *exit == 1 do
 enclave(1, 
  log <- recvmsg;
 );
+displaymsg:= "received";
+Output displaymsg to L ;
 receive <- 0 ;
  
  else 
@@ -69,7 +71,7 @@ skip;
 log:= l9;
  
  end;
-displaymsg:= "bye";
+displaymsg:= "Bye";
 Output displaymsg to L ;
 kill(0);
 kill(1);
