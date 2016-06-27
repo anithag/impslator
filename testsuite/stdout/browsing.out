@@ -1,0 +1,19 @@
+
+ (# Enclave Type Declarations #)
+cnd: cond^(1, 1)_low;
+l1: int_high /cnd T^(1, 1) ref_low;
+l2: int_high /cnd T^(1, 1) ref_low;
+l3: int_low^(0, -1) ref_low;
+
+ (# Enclave Program #)
+enclave(1, 
+ while *l1 == 1 do 
+ Output *l2 to H ;
+skip;
+ 
+ end;
+);
+set(cnd);
+Output *l3 to L ;
+kill(0);
+kill(1);

@@ -9,6 +9,12 @@ exception PrintError
 exception TranslationError of string
 exception IdNotFound of string
 
+let rec printPolicy oc p = match p with
+ |Low -> Printf.fprintf oc "low"
+ |High -> Printf.fprintf oc "high"
+ |Erase (p1, x, p2) -> Printf.fprintf oc "%a /%s %a" printPolicy p1 x printPolicy p2
+ |Top   -> Printf.fprintf oc "T"
+
 let get_enclave_id model mu = begin match mu with
     |ModeVar (mu1, li) -> 
 		        let iscurmodeenc = if (ModeSAT.find mu1 model) = 1 then true else false in
@@ -134,7 +140,7 @@ let rec printEncProgram oc (model, isoutermodeenc, tstmt) = match tstmt with
 			| TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ch, texp, gamma', k')::tail ->
 						let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model)=1 then true else false in
 						let _ = if (isoutermodeenc)||(isprevmodeenc && iscurmodeenc) || (not iscurmodeenc) then
-								Printf.fprintf oc "Output %a to _ ;\n" printEncExp (model, texp)
+								Printf.fprintf oc "Output %a to %c ;\n" printEncExp (model, texp) ch
 							else if (not isoutermodeenc && isprevmodeenc && not iscurmodeenc) then
 								Printf.fprintf oc ");\n Output %a to _ ;\n" printEncExp (model, texp)
 							else (* if (not isoutermodeenc)&&(not isprevmodeenc)&&(iscurmodeenc) then *)
@@ -280,12 +286,6 @@ and printeexp oc  (model, e) = match e with
   | EDeref e -> Printf.fprintf oc "*%a" printeexp (model, e)
   | EIsunset x -> Printf.fprintf oc "isunset(%s)" x
 
-let rec printPolicy oc p = match p with
- |Low -> Printf.fprintf oc "low"
- |High -> Printf.fprintf oc "high"
- |Erase (p1, x, p2) -> Printf.fprintf oc "%a /%s %a" printPolicy p1 x printPolicy p2
- |Top   -> Printf.fprintf oc "T"
-
 let rec printEncBaseType oc (model, value) = match value with
   |EBtRef (mu, lt')  -> let iscurmodeenc = if (ModeSAT.find (get_mode_var mu) model) = 1 then true else false in
 			    let id = get_enclave_id model mu in
@@ -323,6 +323,6 @@ and printEncType oc (model, value) = match value with
   | EBtFunc (mu, gpre1, kpre, p, cset, gpost, kpost), q -> ()
 
 let rec printEncLocTypes oc (model, genc) = VarLocMap.iter (fun key value -> match key with
-						| Reg x -> ()
+						| Reg x -> Printf.fprintf oc "%s: %a;\n" x printEncType (model, value)
 						| Mem l -> Printf.fprintf oc "l%d: %a;\n" l printEncType (model, value)
 						) genc

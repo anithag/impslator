@@ -1,0 +1,10 @@
+
+ (# Enclave Type Declarations #)
+y1: int_high;
+z: int_low;
+
+ (# Enclave Program #)
+y1:= 1;
+z:= 1;
+kill(0);
+kill(1);

@@ -1,0 +1,30 @@
+
+ (# Enclave Type Declarations #)
+l1: int_low^(0, -1) ref_low;
+l2: int_high^(1, 1) ref_low;
+l3: int_high^(1, 1) ref_low;
+l4: int_high^(1, 1) ref_low;
+
+ (# Enclave Program #)
+while *l1 != 0 do 
+ if *l1 == 1 then 
+ enclave(1, 
+ Output *l2 + *l3 to _;
+);
+);
+ skip;
+ 
+ else 
+ enclave(1, 
+ Output *l2 % *l3 to _;
+);
+);
+ skip;
+ 
+ fi;
+skip;
+ 
+ end;
+skip;
+kill(0);
+kill(1);

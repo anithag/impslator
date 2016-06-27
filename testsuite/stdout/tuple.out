@@ -1,0 +1,16 @@
+
+ (# Enclave Type Declarations #)
+k: int_low;
+y1: (string, int)_high;
+z: string_low;
+l1: (string, int)_high^(1, 1) ref_low;
+
+ (# Enclave Program #)
+enclave(1, 
+ y1:= *l1;
+y1:= ("hello", 1);
+);
+z:= fst y1;
+k:= snd y1;
+kill(0);
+kill(1);

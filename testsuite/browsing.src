@@ -4,7 +4,8 @@ l3: int_low ref_low;
 cnd: cond_low
 
 while (*l1) == 1 do
- output(H, (*l2))
+ output(H, (*l2));
+ skip
 end;
 set(cnd);
 output(L, (*l3))

@@ -66,8 +66,9 @@ let () =
 
   let model = Util.extractsatmodel out in
   let oc = open_out "output.txt" in
+  let _ = Printf.fprintf oc "\n (# Enclave Type Declarations #)\n" in
   let _ = Translate.printEncLocTypes oc (model, genc) in
-  let _ = Printf.printf "\n\n" in
+  let _ = Printf.fprintf oc "\n (# Enclave Program #)\n" in
   
   let _ = Translate.printEncProgram oc (model, false, tstmt) in
    ()

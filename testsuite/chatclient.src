@@ -44,6 +44,7 @@ while (*connect) == 1 do
 		send <- 0
 	  else 
 	    if (*erasechat) == 1 then
+		log <- "0";
 		set(clear);
 		skip
 	    else

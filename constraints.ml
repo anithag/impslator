@@ -558,7 +558,12 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		 let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
 		 let gamma' =  enc_flow_sensitive_type_infer pc gammatmp2 encs in
 		 let tstmt = TUpdate(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp1, texp2, gamma', k) in
-		 (TConstraints.union c1 c2, tstmt)
+		 let c3 = TConstraints.union c1 c2 in
+		 let encb1 = get_enc_exp_type gamma' ence1 in 
+		 let mu' = get_mode encb1 in 
+		 (* μ' ≠ N => μ' = μ *)
+		 let c4 = TConstraints.add  (ModenotNimpliesEq (mu', mu)) c3 in
+		 (c4, tstmt)
  |Seq(s1, s2)  -> let seqlist = flattenseq s in
 			let rec seqloop c1 mui g genc ki tstmtlist = function
 			| [] -> (c1, g, genc, ki, tstmtlist)

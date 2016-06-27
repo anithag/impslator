@@ -1,0 +1,24 @@
+
+ (# Enclave Type Declarations #)
+r: int_low;
+y1: int_high;
+z: int_low;
+
+ (# Enclave Program #)
+enclave(1, 
+ z:= 1;
+r:= 3;
+if y1 == 1 then 
+ y1:= r;
+r:= r + 1;
+ 
+ else 
+ y1:= z + 2;
+z:= z + 2;
+ 
+ fi;
+y1:= 0;
+r:= 0;
+z:= 0;
+)kill(0);
+kill(1);
