@@ -28,10 +28,10 @@ let handle_lexical_error fn lexbuf =
 }
 
 let digit = ['0'-'9']
-let id = ['a'-'z'] ['a'-'z' '0'-'9' '-']*
+let id = ['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '-']*
 let ws = [' ' '\t']
 let location =['l']['0'-'9']* 
-let literal = ['"']['a'-'z' '0'-'9' '-']*['"']
+let literal = ['"']['a'-'z' 'A'-'Z' '0'-'9' '-']*['"']
 let array  = ['[']['0'-'9']*[']']
 
 rule token = parse

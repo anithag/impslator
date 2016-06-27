@@ -1,8 +1,9 @@
 
  (# Enclave Type Declarations #)
 clear: cond^(1, 1)_low;
-connect: int_low^(1, 1) ref_low;
+displaymsg: string_low;
 erasechat: int_low^(1, 1) ref_low;
+exit: int_low^(1, 1) ref_low;
 join: int_low^(1, 1) ref_low;
 log: int_high /clear T^(1, 1) ref_low;
 receive: int_low^(1, 1) ref_low;
@@ -20,12 +21,12 @@ l9: int_low^(0, -1) ref_low;
 
  (# Enclave Program #)
 log:= l1;
-connect:= l5;
+exit:= l5;
 join:= l6;
 receive:= l7;
 send:= l8;
 erasechat:= l9;
-while *connect == 1 do 
+while *exit == 1 do 
  while *join == 1 do 
  if *receive == 1 then 
  recvmsg:= *l2;
@@ -49,7 +50,7 @@ send <- 0 ;
  log <- "0";
 );
 set(clear);
-skip;
+join <- 0 ;
  
  else 
  skip;
@@ -68,5 +69,7 @@ skip;
 log:= l9;
  
  end;
+displaymsg:= "bye";
+Output displaymsg to L ;
 kill(0);
 kill(1);

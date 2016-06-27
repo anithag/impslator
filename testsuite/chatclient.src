@@ -1,34 +1,48 @@
 
 (# l1: log file #)
 l1: int_high~top,clear ref_low; 
+
 (# l2: location for recv mesg #)
 l2: string_low ref_low; 
+
 (# l3: location for send mesg #)
 l3: string_low ref_low; 
+
 (# location for commands #)
 l5: int_low ref_low;
 l6: int_low ref_low;
 l7: int_low ref_low;
 l8: int_low ref_low;
 l9: int_low ref_low;
+
+(# Variables that read from locations #)
 log: int_high~top,clear ref_low; 
-connect: int_low ref_low;
+exit : int_low ref_low;
 join: int_low ref_low;
 send: int_low ref_low;
 receive: int_low ref_low;
 erasechat:int_low ref_low;
 clear:cond_low;
 sendmsg: string_low;
-recvmsg: string_low
+recvmsg: string_low;
+displaymsg: string_low
+
 
 log := l1;
-connect := l5;
+exit := l5;
 join := l6;
 receive := l7;
 send := l8;
 erasechat := l9;
 
-while (*connect) == 1 do
+(# Summary
+ 	1. Locations l5, l6, l7, l8 and l9 receive user commands.
+	2. Continue polling if the user wants to exit
+	3. Continue polling if the user has joined a channel. If so
+	      Send and receive messages by writing to the log
+	      If user selects erasechat delete the chat log and quit the channel
+#)
+while (*exit) == 1 do
 
  while (*join) == 1 do
 	
@@ -46,7 +60,7 @@ while (*connect) == 1 do
 	    if (*erasechat) == 1 then
 		log <- "0";
 		set(clear);
-		skip
+		join <- 0
 	    else
 		skip;
 		skip
@@ -57,7 +71,7 @@ while (*connect) == 1 do
       fi;
       skip
  end;
- 
-(# Zero-out registers #)
-log := l9
-end
+ log := l9
+end;
+displaymsg := "Bye";
+output(L, displaymsg)
