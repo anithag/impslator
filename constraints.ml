@@ -273,8 +273,8 @@ let rec src_flow_sensitive_type_infer (pc:policy) (g:context) = function
 						| _ -> raise (TranslationError "Join of source contexts not possible. Domain of contexts is not same.") 
 						end ) g gi''
 			in 
-			 if (VarLocMap.equal (fun a b -> if a = b then true else false) gi' gi'') then
-			 	gn
+			 if (VarLocMap.equal (fun a b -> if a = b then true else false) gi' gn) then
+			 	gi''
 			 else 
 				compute_fixpoint s  gn
 		     in compute_fixpoint s g
@@ -343,8 +343,8 @@ let rec enc_flow_sensitive_type_infer (pc:policy) (genc:enccontext) = function
 						| _ -> raise (TranslationError "Join of enclave contexts not possible. Domain of contexts is not same.") 
 						end ) genc gi''
 			in 
-			 if (VarLocMap.equal (fun a b -> if a = b then true else false) gi' gi'') then
-			 	gn
+			 if (VarLocMap.equal (fun a b -> if a = b then true else false) gi' gn) then
+			 	gi''
 			 else 
 				compute_fixpoint s  gn
 		     in compute_fixpoint s genc

@@ -1,0 +1,62 @@
+
+(# l1: log file #)
+l1: int_high~top,clear ref_low; 
+(# l2: location for recv mesg #)
+l2: string_low ref_low; 
+(# l3: location for send mesg #)
+l3: string_low ref_low; 
+(# location for commands #)
+l5: int_low ref_low;
+l6: int_low ref_low;
+l7: int_low ref_low;
+l8: int_low ref_low;
+l9: int_low ref_low;
+log: int_high~top,clear ref_low; 
+connect: int_low ref_low;
+join: int_low ref_low;
+send: int_low ref_low;
+receive: int_low ref_low;
+erasechat:int_low ref_low;
+clear:cond_low;
+sendmsg: string_low;
+recvmsg: string_low
+
+log := l1;
+connect := l5;
+join := l6;
+receive := l7;
+send := l8;
+erasechat := l9;
+
+while (*connect) == 1 do
+
+ while (*join) == 1 do
+	
+	if (*receive) == 1 then
+		recvmsg := (*l2);
+		log <- recvmsg;
+		receive <- 0
+	else
+	  if (*send) == 1 then
+		sendmsg := (*l3);
+		log <- sendmsg;
+		output(L, sendmsg);
+		send <- 0
+	  else 
+	    if (*erasechat) == 1 then
+		set(clear);
+		skip
+	    else
+		skip;
+		skip
+	    fi;
+	    skip
+	fi;
+	skip
+      fi;
+      skip
+ end;
+ 
+(# Zero-out registers #)
+log := l9
+end
