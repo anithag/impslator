@@ -55,18 +55,19 @@ vardecllist: vardecl                { $1 }
 							| None, right -> right
 							| left, None  -> left
 						      ) $1 $3 }
-program: vardecllist stmt           {($1, $2)} 
+program: vardecllist stmtlist           		{($1, (Seq $2))} 
 
-stmt : IF bexp THEN stmt ELSE stmt ENDIF  	{ If($2, $4, $6) }
-     | SKIP			   		{ Skip }
-     | VAR ASSIGN exp		    		{ Assign($1, $3)  }
-     | VAR ASSIGN DECLASSIFY LPAREN exp RPAREN  { Declassify($1, $5)  }
-     | stmt SEQ stmt		    		{ Seq($1, $3)  }
-     | WHILE bexp DO stmt   END     		{ While($2, $4) }
-     | exp UPDATE exp 		    		{ Update($1, $3) }
-     | OUTPUT LPAREN CHANNEL COMMA aexp RPAREN  { Output($3, $5) }
-     | CALL LPAREN exp RPAREN 	    		{ Call($3) }
-     | SET LPAREN VAR RPAREN        		{ Set($3) }
+stmtlist : stmt 					{ [$1] }
+         | stmt stmtlist				{ [$1] @ $2 }
+stmt : IF bexp THEN stmtlist ELSE stmtlist ENDIF SEQ 	{ If($2, (Seq $4), (Seq $6)) }
+     | SKIP SEQ			   			{ Skip }
+     | VAR ASSIGN exp SEQ		    			{ Assign($1, $3)  }
+     | VAR ASSIGN DECLASSIFY LPAREN exp RPAREN SEQ  	{ Declassify($1, $5)  }
+     | WHILE bexp DO stmtlist   END   SEQ  		{ While($2, (Seq $4)) }
+     | exp UPDATE exp SEQ			    		{ Update($1, $3) }
+     | OUTPUT LPAREN CHANNEL COMMA aexp RPAREN SEQ  	{ Output($3, $5) }
+     | CALL LPAREN exp RPAREN SEQ	    			{ Call($3) }
+     | SET LPAREN VAR RPAREN  SEQ      			{ Set($3) }
 
 
 exp : bexp 				{ $1 }
@@ -76,7 +77,7 @@ exp : bexp 				{ $1 }
     | texp				{ $1 }
     | arrexp				{ $1 }
 
-lexp : LPAREN LAMBDA LPAREN LCURLY vardecllist RCURLY COMMA policy COMMA Uset COMMA LCURLY vardecllist RCURLY RPAREN DOT stmt RPAREN UNDERSCORE policy 	{ Lam($5,$8,$10,$13,$20,$17) }
+lexp : LPAREN LAMBDA LPAREN LCURLY vardecllist RCURLY COMMA policy COMMA Uset COMMA LCURLY vardecllist RCURLY RPAREN DOT stmtlist RPAREN UNDERSCORE policy 	{ Lam($5,$8,$10,$13,$20, (Seq $17)) }
  
 bexp: TRUE			  			 { True  }
     | FALSE                        			 { False }

@@ -9,7 +9,6 @@ l3: int_low^(0, -1) ref_low;
 enclave(1, 
  while *l1 == 1 do 
  Output *l2 to H ;
-skip;
  
  end;
 );

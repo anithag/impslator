@@ -3,4 +3,4 @@ y1:(string, int)_high; l1:(string, int)_high ref_low; z: string_low; k: int_low
  y1:= (*l1) ; 
  y1:= ("hello", 1); 
  z := fst y1; 
- k := snd y1
+ k := snd y1;

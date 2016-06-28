@@ -5,7 +5,6 @@ cnd: cond_low
 
 while (*l1) == 1 do
  output(H, (*l2));
- skip
 end;
 set(cnd);
-output(L, (*l3))
+output(L, (*l3));

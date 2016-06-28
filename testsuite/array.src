@@ -7,4 +7,4 @@ l4: (string, int)_low ref_low
 l1 <-(l3, l4);
 y1[1] <- (*l1)[1];
 y1[0] <- (*l1)[0];
-y1 := l2
+y1 := l2;

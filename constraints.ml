@@ -244,9 +244,13 @@ let rec src_flow_sensitive_type_infer (pc:policy) (g:context) = function
 		      let g1 = VarLocMap.add (Reg x) (fst srctype, Low) g in
 		      g1
     |Update(e1, e2) -> g
-    |Seq(s1, s2)  ->  let g1 = src_flow_sensitive_type_infer pc g s1 in
-		      let g2 = src_flow_sensitive_type_infer pc g1 s2 in
-		      g2 
+    |Seq slist ->     let rec loop gi li =begin match li with
+			|[] -> gi
+			| xs::tail ->
+				let gi' = src_flow_sensitive_type_infer pc gi xs in
+		      		loop gi' tail
+			end in
+			loop g slist
     |Set x	-> g
     |Skip -> g
     |If(e, s1, s2) ->   
@@ -307,9 +311,15 @@ let rec enc_flow_sensitive_type_infer (pc:policy) (genc:enccontext) = function
 		      let genc1 = VarLocMap.add (Reg x) (fst enctype, Low) genc in
 		      genc1
     |EUpdate( e1, e2) -> genc
-    |ESeq( s1, s2)  ->  let g1 = enc_flow_sensitive_type_infer pc genc s1 in
-		            let g2 = enc_flow_sensitive_type_infer pc g1 s2 in
-		      	    g2 
+    |ESeq(senclist)  ->  
+    			let rec loop genci li =begin match li with
+				|[] -> genci
+				| xs::tail ->
+					let gi' = enc_flow_sensitive_type_infer pc genci xs in
+		      			loop gi' tail
+			end in
+			loop genc senclist
+
     |EESeq(slist)  -> let rec seq_flow_sensitive genc = function
 				|[] -> genc
 				|s::tail ->
@@ -564,7 +574,7 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		 (* μ' ≠ N => μ' = μ *)
 		 let c4 = TConstraints.add  (ModenotNimpliesEq (mu', mu)) c3 in
 		 (c4, tstmt)
- |Seq(s1, s2)  -> let seqlist = flattenseq s in
+ |Seq slist      -> let seqlist = slist in
 			let rec seqloop c1 mui g genc ki tstmtlist = function
 			| [] -> (c1, g, genc, ki, tstmtlist)
 			| xs::tail -> 

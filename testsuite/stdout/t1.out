@@ -11,7 +11,7 @@ l2: (int_low^(1, 1) [5])_high^(1, 1) ref_low;
 l3: (int_low^(0, -1) [5])_low^(0, -1) ref_low;
 l11: string_low^(1, 1) ref_low;
 l12: string_low^(1, 1) ref_low;
-l13: string_low^(1, 0) ref_low;
+l13: string_low^(1, 1) ref_low;
 l14: string_low^(1, 1) ref_low;
 l15: string_low^(1, 1) ref_low;
 l21: int_high^(1, 1) ref_low;
@@ -35,11 +35,9 @@ idx:= 0;
 while idx < 5 do 
  if *name[idx] == key then 
  select[idx] <- 1 ;
-skip;
  
  else 
  select[idx] <- 0 ;
-skip;
  
  fi;
 idx:= idx + 1;

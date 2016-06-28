@@ -38,11 +38,9 @@ idx:= 0;
 while idx < 5 do 
  if *name[idx] == key then 
  select[idx] <- 1 ;
-skip;
  
  else 
  select[idx] <- 0 ;
-skip;
  
  fi;
 idx:= idx + 1;
@@ -55,11 +53,9 @@ idx:= 0;
 while idx < 5 do 
  if *select[idx] == 1 then 
  sum:= sum + *amount[idx];
-skip;
  
  else 
  skip;
-skip;
  
  fi;
 idx:= idx + 1;

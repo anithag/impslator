@@ -2,7 +2,7 @@
  (# Enclave Type Declarations #)
 y1: ((string, int)_high^(1, 1) [2])_high;
 l1: ((string, int)_high^(1, 1) [2])_high^(1, 1) ref_low;
-l2: ((string, int)_high^(1, 1) [2])_low^(1, 1) ref_low;
+l2: ((string, int)_high^(1, 1) [2])_low^(1, 0) ref_low;
 l3: (string, int)_low^(1, 1) ref_low;
 l4: (string, int)_low^(1, 1) ref_low;
 

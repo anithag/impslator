@@ -5,14 +5,9 @@ l4: int_high ref_low
 
 
 while (*l1) != 0 do
- 
 	if (*l1) == 1 then
 		output(H, (*l2)+(*l3));
-		skip
 	else
 		output(H, (*l2)%(*l3));
-		skip
 	fi;
-	skip
 end;
-skip

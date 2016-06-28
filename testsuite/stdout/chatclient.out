@@ -56,16 +56,12 @@ join <- 0 ;
  
  else 
  skip;
-skip;
  
  fi;
-skip;
  
  fi;
-skip;
  
  fi;
-skip;
  
  end;
 log:= l9;

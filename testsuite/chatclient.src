@@ -51,29 +51,25 @@ while (*exit) == 1 do
 		log <- recvmsg;
 		displaymsg := "received";
 		output(L, displaymsg);
-		receive <- 0
+		receive <- 0;
 	else
 	  if (*send) == 1 then
 		sendmsg := (*l3);
 		log <- sendmsg;
 		output(L, sendmsg);
-		send <- 0
+		send <- 0;
 	  else 
 	    if (*erasechat) == 1 then
 		log <- "0";
 		set(clear);
-		join <- 0
+		join <- 0;
 	    else
 		skip;
-		skip
 	    fi;
-	    skip
 	fi;
-	skip
       fi;
-      skip
  end;
- log := l9
+ log := l9;
 end;
 displaymsg := "Bye";
-output(L, displaymsg)
+output(L, displaymsg);

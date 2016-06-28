@@ -163,7 +163,7 @@ let next_tvar () : mode =
   ModeVar (s, eidvarlist)
 
 let rec flattenseq s = match s with
-|Seq(c1, c2) -> flattenseq c1 @ flattenseq c2
+|Seq s1 -> s1
 | _   -> [s]
 
 (* Returns true when all registers all low *)

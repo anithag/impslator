@@ -84,7 +84,7 @@ stmt =
   | Assign of var * exp
   | Declassify of var * exp
   | Update of exp * exp		     (* l <- e OR  l[idx] <- e *)  
-  | Seq of stmt * stmt
+  | Seq of (stmt list)  
   | While of  exp * stmt
   | Output of channel * exp
   | Call of exp
@@ -142,7 +142,7 @@ and  encstmt =
   |EAssign of var * encexp 
   |EDeclassify of var * encexp
   |EUpdate of encexp * encexp
-  |ESeq of encstmt * encstmt
+  |ESeq of (encstmt list) 
   |EESeq of (encstmt list)
   |EWhile of encexp * encstmt
   |EOutput of channel * encexp
