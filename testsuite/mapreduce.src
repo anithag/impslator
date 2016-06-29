@@ -124,17 +124,17 @@ reduce := (lambda({pc:((string, int)_high [8])_low; out:((string, int)_high [8])
 			sum := 0;
 		end;
 		)_high;
-call(reduce) 
+call(reduce); 
 
 (# Erasing Registers #)
 len  :=0;
 tmp1:=0;
 tmp2:=0;
 sum := 0;
-key :="0";
 pcidx:= 0;
 idx:=0;
 tmpidx:=0;
 outidx:=0;
-map := (lambda({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, low, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low}).skip;skip)_low; 
-reduce := (lambda({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_low}, low, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_low}).skip;skip)_low;
+key :="0";
+map := (lambda({len:int_low; pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low}, low, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low}).skip;)_low; 
+reduce := (lambda({pc:((string, int)_high [8])_low; len:int_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_low}, low, {}, {pc:((string, int)_high [8])_low; idx:int_low; pcidx:int_low; doc:(string_high [5])_low; len:int_low;tmpidx:int_low; tmp1:string_low; tmp2: int_low; key:string_low; sum:int_low}).skip;)_low;
