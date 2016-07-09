@@ -97,13 +97,17 @@ let rec convertconstr c1 c2 = function
 | KillUnion(k1, k2, k3) 		(* K1 = K' U K'' *) ->
 					(* k1[i] = 0 -> k2[i]=0 /\ k3[i] = 0
 					   k2[i] = 0 /\ k3[i] = 0 -> k1[i] = 0 
+					   k2[i] = 1 -> k1[i] = 1
+					   k3[i] = 1 -> k1[i] = 1 
 					*)
 					let rec loop c2 = function
 					  |[], [], [] -> c2
 					  | xs1::tail1, xs2::tail2, xs3::tail3 -> 
 								let c2' = Constr2.add  (Dnfclause ([Eidcond(xs2,0)]@[Eidcond(xs3, 0)]), Eidcond(xs1, 0)) c2 in 
 								let c2'' = Constr2.add  (Eidcond(xs1, 0), Dnfclause ([Eidcond(xs2,0)]@[Eidcond(xs3, 0)])) c2' in 
-									loop c2'' (tail1, tail2, tail3)
+								let c3 = Constr2.add  (Eidcond(xs2, 1), Eidcond(xs1,1)) c2'' in 
+								let c3' = Constr2.add  (Eidcond(xs3, 1), Eidcond(xs1,1)) c3 in 
+									loop c3' (tail1, tail2, tail3)
 					in 
 					let c3 = loop c2  (k1, k2, k3) in
 					(c1, c3)
@@ -122,11 +126,11 @@ let rec convertconstr c1 c2 = function
 					let c3 = loop c2  (k1, k2) in
 					(c1, c3)
 					
-| EnclaveExitimpliesModeEq(muvar1, muvar2) 	(* ~isVarLowContext -> μi = N ∨ μi = μi+1 *) ->
-					(* Revisit: making this same as mu1 = m2 *)
+| EnclaveExitimpliesModeEq(muvar1, muvar2) 	(* ~isVarLowContext -> μi = μi+1 *) ->
+					(* Revisit: making this same as mu1 = mu2 *)
 					let mu1 = get_mode_var muvar1 in
 					let mu2 = get_mode_var muvar2 in
-			                 (* Match on enclave/normal modes *)
+			                (* Match on enclave/normal modes *)
 					let c2' = Constr2.add (Modecond(mu1, 1), Modecond(mu2, 1)) c2 in
 					let c2'' = Constr2.add (Modecond(mu1, 0), Modecond(mu2, 0)) c2' in
 					let c3' = Constr2.add (Modecond(mu2, 1), Modecond(mu1, 1)) c2'' in
@@ -152,8 +156,7 @@ let rec convertconstr c1 c2 = function
 					let c4 = loop c3''  (eidlst1, eidlst2) in
 					(c1, c4)
 
-| EnclaveExitimpliesKill(muvar,k) 	(* ~isVarLowContext -> μi = N ∨ K'' = Ø *) ->
-					(* Revisit: making this same as k = Ø *)
+| EnclaveExitimpliesKill(muvar,k) 	(* ~isVarLowContext -> K'' = Ø *) ->
 					let rec loop c1 = function
 					  |[] -> c1
 					  |xs::ktail -> let c1' = Constr.add  (Eidcond(xs, 0)) c1 in 
@@ -190,22 +193,33 @@ let rec convertconstr c1 c2 = function
 					let c3 = loop c1  k in
 					(c3, c2)
 
-| Enclaveid muvar			->	
+| Enclaveid muvar				->	
+					(* Ensures that if enclave mode is not normal, then atleast one of the identifier is set*)
+					let mu = get_mode_var muvar in
 					let eidlst = get_mode_eidlist muvar in
-					let rec loop c2 = function
-					| [] -> c2
-					| xs1::tail -> let rec innerloop c3 = function
-							|[] -> c3
+					let rec loop1 dnflist = function
+					| [] -> dnflist
+					| xs1::tail -> 
+						       loop1 (dnflist@[Modecond (xs1, 0)]) tail
+					in
+					let dnflist = loop1 [] eidlst in
+					let c3 = Constr2.add ((Dnfclause dnflist), Modecond (mu,0))  c2 in 
+					
+					(* Ensures that only one identifier is set *)
+					let rec loop2 c4 = function
+					| [] -> c4
+					| xs1::tail -> let rec innerloop c5 = function
+							|[] -> c5
 							|xs2::tail'->
-									let c3' = Constr2.add (Modecond (xs1, 1), Modecond (xs2,0)) c3 in
-									let c3'' = Constr2.add (Modecond (xs2, 1), Modecond (xs1,0)) c3' in
-									innerloop c3'' tail'
+									let c5' = Constr2.add (Modecond (xs1, 1), Modecond (xs2,0)) c5 in
+									let c5'' = Constr2.add (Modecond (xs2, 1), Modecond (xs1,0)) c5' in
+									innerloop c5'' tail'
 							in 
-							let c4 = innerloop c2 tail in
-							loop c4 tail
+							let c6 = innerloop c4 tail in
+							loop2 c6 tail
 					in 
-					let c5 = loop c2 eidlst in
-					(c1, c5)
+					let c7 = loop2 c3 eidlst in
+					(c1, c7)
 
 let rec convertconstraints c1 c2 tconstrset =
     if (TConstraints.is_empty tconstrset) then

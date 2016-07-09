@@ -5,7 +5,7 @@ y1: int_high;
 z: int_low;
 
  (# Enclave Program #)
-enclave(1, 
+enclave(2, 
  z:= 1;
 r:= 3;
 if y1 == 1 then 
@@ -20,5 +20,6 @@ z:= z + 2;
 y1:= 0;
 r:= 0;
 z:= 0;
-)kill(0);
+);
 kill(1);
+kill(2);

@@ -1,11 +1,12 @@
 
  (# Enclave Type Declarations #)
 y1: string_high;
-l1: string_high^(1, 1) ref_low;
+l1: string_high^(1, 2) ref_low;
 
  (# Enclave Program #)
-enclave(1, 
+enclave(2, 
  y1:= *l1;
 y1:= "hello";
-)kill(0);
+);
 kill(1);
+kill(2);

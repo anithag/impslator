@@ -1,29 +1,29 @@
 
  (# Enclave Type Declarations #)
-amount: (int_low^(1, 1) [5])_low;
+amount: (int_low^(1, 2) [5])_low;
 idx: int_low;
 key: string_low;
-name: (string_low^(1, 1) [5])_low;
-select: (int_low^(1, 1) [5])_low;
+name: (string_low^(1, 2) [5])_low;
+select: (int_low^(1, 2) [5])_low;
 sum: int_low;
 l1: (string_low^(0, -1) [5])_low^(0, -1) ref_low;
-l2: (int_low^(1, 1) [5])_high^(1, 1) ref_low;
+l2: (int_low^(0, -1) [5])_high^(1, 1) ref_low;
 l3: (int_low^(0, -1) [5])_low^(0, -1) ref_low;
-l11: string_low^(1, 1) ref_low;
-l12: string_low^(1, 1) ref_low;
-l13: string_low^(1, 1) ref_low;
-l14: string_low^(1, 1) ref_low;
-l15: string_low^(1, 1) ref_low;
-l21: int_high^(1, 1) ref_low;
-l22: int_high^(1, 1) ref_low;
-l23: int_high^(1, 1) ref_low;
-l24: int_high^(1, 1) ref_low;
-l25: int_high^(1, 1) ref_low;
-l31: int_low^(1, 1) ref_low;
-l32: int_low^(1, 1) ref_low;
-l33: int_low^(1, 1) ref_low;
-l34: int_low^(1, 1) ref_low;
-l35: int_low^(1, 1) ref_low;
+l11: string_low^(1, 2) ref_low;
+l12: string_low^(1, 2) ref_low;
+l13: string_low^(1, 2) ref_low;
+l14: string_low^(1, 2) ref_low;
+l15: string_low^(1, 2) ref_low;
+l21: int_high^(1, 2) ref_low;
+l22: int_high^(1, 2) ref_low;
+l23: int_high^(1, 2) ref_low;
+l24: int_high^(1, 2) ref_low;
+l25: int_high^(1, 2) ref_low;
+l31: int_low^(1, 2) ref_low;
+l32: int_low^(1, 2) ref_low;
+l33: int_low^(1, 2) ref_low;
+l34: int_low^(1, 2) ref_low;
+l35: int_low^(1, 2) ref_low;
 
  (# Enclave Program #)
 l1 <- (l11,l12,l13,l14,l15,) ;
@@ -46,6 +46,7 @@ while idx < 5 do
 idx:= idx + 1;
  
  end;
+kill(2);
 enclave(1, 
  amount:= *l2;
 sum:= 0;
@@ -63,5 +64,5 @@ idx:= idx + 1;
  end;
 sum:= 0;
 amount:= *l3;
-)kill(0);
+);
 kill(1);

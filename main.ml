@@ -34,7 +34,10 @@ let () =
   let (c0, delta, genc) = (Constraints.translategamma gammasrc) in
   let c, tstmt = (Constraints.gen_constraints_stmt Low gammasrc VarSet.empty stmt mu0 genc k delta) true in
 
-  let c = TConstraints.union c c0  in
+  (* All killed enclaves should be disjoint *)
+  let killc = gen_constraints_killsets tstmt c in
+
+  let c = TConstraints.union killc c0  in
 
   (* μ0 = N *)
   let c' = TConstraints.add (ModeisN (mu0,0)) c in
@@ -49,7 +52,8 @@ let () =
   
   (* No optimization for now *)
   let mu0var = get_mode_var mu0 in
-  let totalc = 	gen_tcb_objective (PMonoterm (0, (Mono mu0var))) tstmt in
+  let tcbcost =	gen_tcb_objective (PMonoterm (0, (Mono mu0var))) tstmt in
+  let totalc =	gen_critical_window_objective tcbcost tstmt in
 
   let condconstr_num = Helper.countCondConstraints c2 in
   let _ = Pprint.printCost totalc ((Constr.cardinal c1) + condconstr_num) in

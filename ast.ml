@@ -155,16 +155,16 @@ type program = context * stmt
 
 (* Translation Judgment *)
 type translate = 
-|TSkip of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encstmt * enccontext * killset
-|TAssign  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * var * translateexp * enccontext * killset
-|TDeclassify of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * var * translateexp * enccontext * killset
-|TUpdate of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * translateexp * translateexp * enccontext * killset
-|TOut of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * channel* translateexp* enccontext * killset
-|TSetcnd of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * var * enccontext * killset
-|TSeq of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * (translate list)* enccontext * killset
-|TIf  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encexp * translate * translate * enccontext * killset
-|TWhile  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encexp * translate * enccontext * killset
-|TCall  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * translateexp * enccontext * killset
+|TSkip of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encstmt * enccontext * killset 
+|TAssign  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * var * translateexp * enccontext * killset 
+|TDeclassify of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * var * translateexp * enccontext * killset 
+|TUpdate of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * translateexp * translateexp * enccontext * killset 
+|TOut of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * channel* translateexp* enccontext * killset 
+|TSetcnd of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * var * enccontext * killset 
+|TSeq of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * (translate * killset) list* enccontext * killset 
+|TIf  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encexp * translate * translate * enccontext * killset 
+|TWhile  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * encexp * translate * enccontext * killset 
+|TCall  of policy * context * cndset * context * stmt * mode * enccontext * killset * loctype * translateexp * enccontext * killset 
 
 and translateexp = 
 |TExp of  context * exp * labeltype * mode * enccontext * loctype * encexp * enclabeltype
@@ -179,8 +179,8 @@ type tconstraint =
 | ModenotNimpliesNoKill of mode * killset  	(* μ = 1 -> K'' = Ø *)
 | KillUnion  of killset * killset * killset 	(* K1 = K' U K'' *)
 | KillIntersectEmpty of killset * killset  	(* K1 ∩ K2 = Ø *)
-| EnclaveExitimpliesModeEq of mode * mode 	(* ~isVarLowContext -> μi = N ∨ μi = μi+1 *)
-| EnclaveExitimpliesKill   of mode * killset 	(* ~isVarLowContext -> μi = N ∨ K'' = Ø *)
+| EnclaveExitimpliesModeEq of mode * mode 	(* ~isVarLowContext -> μi = μi+1 *)
+| EnclaveExitimpliesKill   of mode * killset 	(* ~isVarLowContext -> K'' = Ø *)
 | KillEq  of killset * killset 			(* K1 = K2 *) 
 | Killempty of killset 				(* K = Ø *)
 | Enclaveid of mode				(* id1 =1 -> id2 = 0 /\ id3=0 ... *)

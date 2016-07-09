@@ -2,13 +2,13 @@
  (# Enclave Type Declarations #)
 y1: int_high;
 z: int_low;
-l1: int_high^(1, 1) ref_low;
+l1: int_high^(1, 2) ref_low;
 
  (# Enclave Program #)
-enclave(1, 
+enclave(2, 
  y1:= *l1;
 y1:= 0;
 );
-z:= 1;
-kill(0);
 kill(1);
+kill(2);
+z:= 1;
