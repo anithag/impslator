@@ -54,13 +54,16 @@ and gen_tcb_exp_objective tcbcost texp = match texp with
 
 
 (* Minimize the window of vulnerability by maximizing the kill sets.
+
+   Killsets from a sequence statement form a lattice with the partial order indicating
+   the order of execution.
+
    Let K1, K2....Kn be form a lattice (L, <) with  partial order K1 < {K2, K3} < ...< Kn.
-   Let level(Ki) be the level of element Ki in lattice
+   Let level(Ki) the level of element Ki in lattice
    Let the elements of set Ki = {ki1, ki2,...kim} with kij = 0/1 indicating the set membership.
    Cost contributed by each set Ki = Σ_j=1...m (level(i) * kij)
    Total Cost = Σ_i=1...n Σ_j=1...m (i * kij) 
-   Thus maximizing the killsets involves 
-	involves minimizing the total cost
+   Thus maximizing the killsets involves minimizing the total cost
  *)
 		
 let gen_kill_cost level kcost k = 
