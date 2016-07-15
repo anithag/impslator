@@ -2,9 +2,15 @@ name: (string_low [5])_low;
 amount: (int_low [5])_low;
 select: (int_low [5])_low;
 
+(# l1: column name #)
 l1: (string_low [5])_low ref_low;
+
+(# l2: column amount#)
 l2: (int_low [5])_high ref_low;
+
+(# l2: temporary array to store selected indicies #)
 l3: (int_low [5])_low ref_low;
+
 key: string_low;
 idx: int_low;
 sum: int_low;
@@ -27,7 +33,10 @@ l33: int_low ref_low;
 l34: int_low ref_low;
 l35: int_low ref_low
 
+(# fill the name column #)
 l1<-(l11, l12, l13, l14, l15);
+
+(# fill the amount column #)
 l2<-(l21, l22, l23, l24, l25);
 l3<-(l31, l32, l33, l34, l35);
 
@@ -37,6 +46,7 @@ select := (*l3);
 key := "alice";
 idx := 0;
 
+(# Search for rows whose name = alice #)
 while idx < 5 do
 	if (*name[idx]) == key then
 		select[idx] <- 1;
@@ -49,6 +59,8 @@ end;
 amount := (*l2);
 sum := 0;
 idx := 0; 
+
+(# Add the amounts for selected rows #)
 while idx < 5 do
 	if (*select[idx]) == 1 then
 		sum := sum + (*amount[idx]);

@@ -1,10 +1,24 @@
+(# modeling private browsing#)
+
+(# l1: status of private browsing mode #)
 l1: int_high~top,cnd ref_low;
+
+(# l2: private url #)
 l2: int_high~top,cnd ref_low;
+
+(# l3: public url #)
 l3: int_low ref_low;
 cnd: cond_low
 
+(# until private mode is turned off, output the private browsing history
+   to high channel. 
+#)
 while (*l1) == 1 do
  output(H, (*l2));
 end;
+
+(# Set the condition to indicate that the history should be erased #)
 set(cnd);
+
+(# Resume normal browsing #)
 output(L, (*l3));
