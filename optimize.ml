@@ -2,6 +2,8 @@ open Helper
 open Ast
 open Proplogic
 
+exception ObjectiveError of string
+
 let rec gen_tcb_objective tcbcost = function
 |TSeq(pc, srcgamma,setu,srcgamma', s,mu,gamma, k, delta, tstmtlistpair, gamma', k') -> 
   		let tstmtlist = fst (List.split tstmtlistpair) in
@@ -51,7 +53,17 @@ and gen_tcb_exp_objective tcbcost texp = match texp with
 |TLamExp(srcgamma,e,srctype, mu,gamma,delta',tstmt,enctype) -> gen_tcb_objective tcbcost tstmt 
 
 
-let gen_kill_cost counter wcost p1 p2 = match (p1, p2) with
+(* Minimize the window of vulnerability by maximizing the kill sets.
+   Let K1, K2....Kn be form a lattice (L, <) with  partial order K1 < {K2, K3} < ...< Kn.
+   Let level(Ki) be the level of element Ki in lattice
+   Let the elements of set Ki = {ki1, ki2,...kim} with kij = 0/1 indicating the set membership.
+   Cost contributed by each set Ki = Σ_j=1...m (level(i) * kij)
+   Total Cost = Σ_i=1...n Σ_j=1...m (i * kij) 
+   Thus maximizing the killsets involves 
+	involves minimizing the total cost
+ *)
+		
+let gen_kill_cost_old counter wcost p1 p2 = match (p1, p2) with
  |(k1, k1'), (k2, k2') -> let rec loop k2 k1' wcost = begin match (k2, k1') with
 				|[], [] -> wcost 
 				|(xs2::tail2), (xs1::tail1) -> (* xs2 - xs1 *)
@@ -61,15 +73,44 @@ let gen_kill_cost counter wcost p1 p2 = match (p1, p2) with
 			  end in
 			 loop k2 k1' wcost
 								 
+let gen_kill_cost counter kcost k = 
+  let rec loop k kcost = begin match k with
+	| [] -> kcost
+	|(xs::tail) -> 
+		let tmpcost = PPlus (PMonoterm (counter, (Mono xs)), kcost) in
+		 loop tail tmpcost
+	  end in
+ loop k kcost
+								 
 
-let rec gen_critical_window_objective wcost tstmt = 
- let klist = get_pre_post_killset tstmt in
- let rec get_window_cost klist wcost counter = begin match klist with
-			|[] -> wcost
-			|(k1, k1')::(k2, k2')::tail -> 	
-				let wcost' = gen_kill_cost counter wcost (k1, k1') (k2, k2') in
-				get_window_cost ((k2,k2')::tail) wcost' (counter+1)	
-			|(k, k')::[] -> wcost
-	end in
-	get_window_cost klist wcost 1
+let rec gen_critical_window_objective counter kcost tstmt = match tstmt with
+|TSeq(pc, srcgamma,setu,srcgamma', s,mu,gamma, k, delta, tstmtlistpair, gamma', k') -> 
+		let rec loop counter kcost tstmtlistpair = 
+			begin match tstmtlistpair with
+			| [] -> (counter, kcost) 
+			| (TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k'),k'')::tail
+			| (TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k'),k'')::tail  
+			| (TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k'), k'')::tail 
+			| (TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k'), k'')::tail
+			| (TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k'),k'')::tail
+			| (TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _ , gamma', k'),k'')::tail ->
+					let kcost' = gen_kill_cost counter kcost k'' in
+					loop (counter+1) kcost' tail
+			| (TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k'),k'')::tail -> 
+					let (counter1, kcost1) = gen_critical_window_objective counter kcost ttrue in
+					let (counter2, kcost2) = gen_critical_window_objective counter kcost1 tfalse in
+					let counter' = if counter1 > counter2 then counter1 else counter2 in
+					let kcost' = gen_kill_cost counter' kcost2 k'' in
+					loop (counter'+1) kcost' tail
+			| (TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k'),k'')::tail ->
+					let (counter', kcost') =  gen_critical_window_objective counter kcost tbody in 
+					let kcost'' = gen_kill_cost counter' kcost' k'' in
+					loop (counter'+1) kcost'' tail
+			| (TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp,  gamma', k'),k'')::tail->
+					(*FIXME: Should thread through the functions? *)
+					let kcost' = gen_kill_cost counter kcost k'' in
+					loop (counter+1) kcost' tail
+			end in
+		loop counter kcost tstmtlistpair  	
+| _ -> raise (ObjectiveError "Only Sequence is supported for now")
 

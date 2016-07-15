@@ -53,7 +53,7 @@ let () =
   (* No optimization for now *)
   let mu0var = get_mode_var mu0 in
   let tcbcost =	gen_tcb_objective (PMonoterm (0, (Mono mu0var))) tstmt in
-  let totalc =	gen_critical_window_objective tcbcost tstmt in
+  let (_, totalc) =	gen_critical_window_objective  1 tcbcost tstmt in
 
   let condconstr_num = Helper.countCondConstraints c2 in
   let _ = Pprint.printCost totalc ((Constr.cardinal c1) + condconstr_num) in
