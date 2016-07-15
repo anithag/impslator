@@ -63,54 +63,44 @@ and gen_tcb_exp_objective tcbcost texp = match texp with
 	involves minimizing the total cost
  *)
 		
-let gen_kill_cost_old counter wcost p1 p2 = match (p1, p2) with
- |(k1, k1'), (k2, k2') -> let rec loop k2 k1' wcost = begin match (k2, k1') with
-				|[], [] -> wcost 
-				|(xs2::tail2), (xs1::tail1) -> (* xs2 - xs1 *)
-								let tmp = PPlus (PMonoterm (counter, (Mono xs2)), wcost) in
-								let tmp' = PMinus (PMonoterm (counter, (Mono xs1)), tmp) in
-								 loop tail2 tail1 tmp'
-			  end in
-			 loop k2 k1' wcost
-								 
-let gen_kill_cost counter kcost k = 
+let gen_kill_cost level kcost k = 
   let rec loop k kcost = begin match k with
 	| [] -> kcost
 	|(xs::tail) -> 
-		let tmpcost = PPlus (PMonoterm (counter, (Mono xs)), kcost) in
+		let tmpcost = PPlus (PMonoterm (level, (Mono xs)), kcost) in
 		 loop tail tmpcost
 	  end in
  loop k kcost
 								 
 
-let rec gen_critical_window_objective counter kcost tstmt = match tstmt with
+let rec gen_critical_window_objective level kcost tstmt = match tstmt with
 |TSeq(pc, srcgamma,setu,srcgamma', s,mu,gamma, k, delta, tstmtlistpair, gamma', k') -> 
-		let rec loop counter kcost tstmtlistpair = 
+		let rec loop level kcost tstmtlistpair = 
 			begin match tstmtlistpair with
-			| [] -> (counter, kcost) 
+			| [] -> (level, kcost) 
 			| (TSkip(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k'),k'')::tail
 			| (TSetcnd(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, gamma', k'),k'')::tail  
 			| (TAssign (pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k'), k'')::tail 
 			| (TDeclassify(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k'), k'')::tail
 			| (TUpdate(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k'),k'')::tail
 			| (TOut(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _ , gamma', k'),k'')::tail ->
-					let kcost' = gen_kill_cost counter kcost k'' in
-					loop (counter+1) kcost' tail
+					let kcost' = gen_kill_cost level kcost k'' in
+					loop (level+1) kcost' tail
 			| (TIf(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, ttrue, tfalse, gamma', k'),k'')::tail -> 
-					let (counter1, kcost1) = gen_critical_window_objective counter kcost ttrue in
-					let (counter2, kcost2) = gen_critical_window_objective counter kcost1 tfalse in
-					let counter' = if counter1 > counter2 then counter1 else counter2 in
-					let kcost' = gen_kill_cost counter' kcost2 k'' in
-					loop (counter'+1) kcost' tail
+					let (level1, kcost1) = gen_critical_window_objective level kcost ttrue in
+					let (level2, kcost2) = gen_critical_window_objective level kcost1 tfalse in
+					let level' = if level1 > level2 then level1 else level2 in
+					let kcost' = gen_kill_cost level' kcost2 k'' in
+					loop (level'+1) kcost' tail
 			| (TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, encexp, tbody, gamma', k'),k'')::tail ->
-					let (counter', kcost') =  gen_critical_window_objective counter kcost tbody in 
-					let kcost'' = gen_kill_cost counter' kcost' k'' in
-					loop (counter'+1) kcost'' tail
+					let (level', kcost') =  gen_critical_window_objective level kcost tbody in 
+					let kcost'' = gen_kill_cost level' kcost' k'' in
+					loop (level'+1) kcost'' tail
 			| (TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp,  gamma', k'),k'')::tail->
 					(*FIXME: Should thread through the functions? *)
-					let kcost' = gen_kill_cost counter kcost k'' in
-					loop (counter+1) kcost' tail
+					let kcost' = gen_kill_cost level kcost k'' in
+					loop (level+1) kcost' tail
 			end in
-		loop counter kcost tstmtlistpair  	
+		loop level kcost tstmtlistpair  	
 | _ -> raise (ObjectiveError "Only Sequence is supported for now")
 
