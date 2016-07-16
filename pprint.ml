@@ -154,23 +154,40 @@ let printSingleCondConstraint oc (a, b) =
 										end
 							      else begin Printf.fprintf oc " -1 %s " x; printorclause tail (total-1) end
  					|(Dnfclause condlist)::tail -> raise (UnhandledConstraint "Unsupported constraint format: DNFclause inside DNFclause")
-
 			end in
 			let total = printorclause condlist 1 in
-			let total = begin match b with
+			begin match b with
 							(* Constraint of form x = .. /\ y = .. -> z =1 .. ===> -x=.. \/ -y = .. \/ z =1 ..) *)
 				|(Modecond (x,i2))-> if i2=1 then begin
-									Printf.fprintf oc " +1 %s " x; total
+									Printf.fprintf oc " +1 %s >= %d;\n" x total
 									end
 								else 
-									begin Printf.fprintf oc " -1 %s " x; (total-1) end
+									begin Printf.fprintf oc " -1 %s >= %d;\n" x (total-1) end
 							(* Constraint of form x = .. /\ y = .. -> z =1 .. ===> -x=.. \/ -y = .. \/ z =1 ..) *)
-				|(Eidcond  (x, i2))->  if i2=1 then begin Printf.fprintf oc " +1 %s " x;total
+				|(Eidcond  (x, i2))->  if i2=1 then begin Printf.fprintf oc " +1 %s >= %d;\n " x total
 									 end
-							      else begin Printf.fprintf oc " -1 %s " x; (total-1) end
- 				|(Dnfclause condlist)-> raise (UnhandledConstraint "Unsupported constraint format: DNFclause inside DNFclause")
-			end in	
-			Printf.fprintf oc " >= %d;\n" total
+							      else begin Printf.fprintf oc " -1 %s >= %d;\n" x (total-1) end
+ 				|(Dnfclause condlist2)-> 
+							let rec printinnerorclause condlist2 = begin match condlist2 with
+								|[] -> ()
+								|(Modecond (x,i2))::tail -> 
+											   let total = printorclause condlist 1 in
+												if i2=1 then begin
+													Printf.fprintf oc " +1 %s >= %d;\n" x total; printinnerorclause tail
+													end
+												else 
+													Printf.fprintf oc " -1 %s >= %d;\n" x (total-1); printinnerorclause tail
+								|(Eidcond  (x, i2))::tail ->  
+											   let total = printorclause condlist 1 in
+											    if i2=1 then begin 
+													Printf.fprintf oc " +1 %s >= %d;\n" x total; printinnerorclause tail 
+													end
+											    else 
+													Printf.fprintf oc " -1 %s >= %d;\n" x (total-1); printinnerorclause tail
+								| _ -> raise (UnhandledConstraint "Unsupported constraint format: DNFclause inside DNFclause")
+							end in
+							printinnerorclause condlist2 
+			end 
 
 
 let printusetchannel oc u = let _ = VarSet.fold (fun el oc -> Printf.fprintf oc "%s, " el; oc )  u oc in ()

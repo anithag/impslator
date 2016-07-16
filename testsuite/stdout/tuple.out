@@ -10,7 +10,7 @@ enclave(2,
  y1:= *l1;
 y1:= ("hello", 1);
 );
-z:= fst y1;
 kill(1);
 kill(2);
+z:= fst y1;
 k:= snd y1;

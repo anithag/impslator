@@ -177,6 +177,7 @@ type tconstraint =
 | ModenotKilled of mode * killset  		(* μ \not \in K *)
 | ModenotNimpliesEq of mode * mode   		(* μ = 1 -> μ = μ' *)
 | ModenotNimpliesNoKill of mode * killset  	(* μ = 1 -> K'' = Ø *)
+| ModeEqimpliesNoKill of mode * mode * killset 	(* μ1 = μ2 /\ μ1=1 -> K'' = Ø *)
 | KillUnion  of killset * killset * killset 	(* K1 = K' U K'' *)
 | KillIntersectEmpty of killset * killset  	(* K1 ∩ K2 = Ø *)
 | EnclaveExitimpliesModeEq of mode * mode 	(* ~isVarLowContext -> μi = μi+1 *)

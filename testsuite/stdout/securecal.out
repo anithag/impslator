@@ -1,0 +1,75 @@
+
+ (# Enclave Type Declarations #)
+idx: int_low;
+numops: int_low;
+op1: int_low;
+op2: int_low;
+ops: (string_low^(1, 2) [5])_low;
+stop: int_low;
+l1: (string_low^(0, -1) [5])_low^(0, -1) ref_low;
+l2: string_low^(0, -1) ref_low;
+l3: string_low^(0, -1) ref_low;
+l4: string_low^(0, -1) ref_low;
+l5: string_low^(0, -1) ref_low;
+l6: string_low^(0, -1) ref_low;
+l7: (int_high^(1, 2) [2])_high^(1, 2) ref_low;
+l8: int_high^(1, 2) ref_low;
+l9: int_high^(1, 2) ref_low;
+
+ (# Enclave Program #)
+l1 <- (l2,l3,l4,l5,l6,) ;
+kill(1);
+enclave(2, 
+ l7 <- (l8,l9,);
+);
+ops:= *l1;
+numops:= 5;
+idx:= 0;
+while idx < numops do 
+ if *ops[idx] == "add" then 
+ enclave(2, 
+ op1:= *l7[stop-1];
+op2:= *l7[stop];
+*l7[stop-1] <- *op1 + *op2 ;
+stop:= stop + 1;
+Output *op1 to H ;
+op1:= 0;
+op2:= 0;
+);
+ 
+ else 
+ if *ops[idx] == "times" then 
+ enclave(2, 
+ op1:= *l7[stop-1];
+op2:= *l7[stop];
+*l7[stop-1] <- *op1 + *op2 ;
+stop:= stop + 1;
+Output *op1 to H ;
+op1:= 0;
+op2:= 0;
+);
+ 
+ else 
+ if *ops[idx] == "modulo" then 
+ enclave(2, 
+ op1:= *l7[stop-1];
+op2:= *l7[stop];
+*l7[stop-1] <- *op1 + *op2 ;
+stop:= stop + 1;
+Output *op1 to H ;
+op1:= 0;
+op2:= 0;
+);
+ 
+ else 
+ skip;
+ 
+ fi;
+ 
+ fi;
+ 
+ fi;
+idx:= idx + 1;
+ 
+ end;
+kill(2);

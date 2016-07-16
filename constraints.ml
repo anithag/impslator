@@ -562,6 +562,7 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
 		 let gammatmp1 = get_translated_exp_gamma texp1 in
 		 let b2 = get_exp_type srcgamma e2 in 
+		 let isarraytype = is_array_type b2 in
 		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gammatmp1 delta  in
 		 let gammatmp2 = get_translated_exp_gamma texp2 in
 		 let ence1 = get_translated_exp texp1 in
@@ -576,7 +577,15 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		 let mu' = get_mode encb1 in 
 		 (* μ' ≠ N => μ' = μ *)
 		 let c4 = TConstraints.add  (ModenotNimpliesEq (mu', mu)) c3 in
-		 let c5 = TConstraints.add (ModenotKilled (mu, k)) c4 in
+		 (* FIXME: This is not required *)
+		 let c4' = if isarraytype then
+		 		let encb2 = get_enc_exp_type gamma' ence2 in 
+				let mu2   = get_mode encb2 in 
+				TConstraints.add (ModeEqual (mu', mu2)) c4 
+			   else
+				c4 
+			   in
+		 let c5 = TConstraints.add (ModenotKilled (mu, k)) c4' in
 		 (c5, tstmt)
  |Seq slist      -> let seqlist = slist in
 			let rec seqloop c1 mui g genc ki tstmtlist = function
@@ -610,14 +619,17 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 					(* μ != N -> K'' = Ø *)
 					let c6 = TConstraints.add (ModenotNimpliesNoKill(mu, k'')) c5 in
 
+					(* μi = μj /\ μi=1  -> K'' = Ø *)
+					let c6' = TConstraints.add (ModeEqimpliesNoKill(mui,muj, k'')) c6 in
+
 					let c8 = if (not allreglow) then 
 							(* ~isVarLowContext -> μi = μi+1 *)
-							let c7 = TConstraints.add (EnclaveExitimpliesModeEq(mui,muj)) c6 in
+							let c7 = TConstraints.add (EnclaveExitimpliesModeEq(mui,muj)) c6' in
 
 							(* ~isVarLowContext -> K'' = Ø *)
 							TConstraints.add (EnclaveExitimpliesKill(mui, k'')) c7 
 						 else 
-							c6
+							c6'
 					in
 		
 				     	seqloop (TConstraints.union c1 c8) muj g' genc' kj (tstmtlist@[(tstmt1, k'')]) tail
@@ -778,15 +790,15 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 						     let srctype = get_exp_type srcgamma e in
 						     let (c', texp)  =	gen_constraints_exp srcgamma e srctype mu gamma delta in
 						     (* Add the constraint that mu' = mu for each array mode *)
-		 					let enclt = get_translated_exp_type texp in
-		    					let mu = get_mode enctype in
-							let tcnstr = ModeEqual (mu', mu) in
-							let c'' = TConstraints.add tcnstr c' in
-							loop tail (TConstraints.union c c'')
+		 				     let enclt = get_translated_exp_type texp in
+		    				     let mu'' = get_mode enclt in
+						     let tcnstr = ModeEqual (mu', mu'') in
+						     let c'' = TConstraints.add tcnstr c' in
+						     loop tail (TConstraints.union c c'')
 					|[] -> c
 					end in
 	  	    let c' = loop li c in
-		    (* FiXME: gamma and delta need not be updated ?? *)
+		    (* FIXME: gamma and delta need not be updated ?? *)
 		    let ence = EArray(mu', li) in
 		    let texp = TExp(srcgamma,e,srctype, mu,gamma,delta,ence,enctype) in
 			(c', texp) 

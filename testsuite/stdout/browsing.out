@@ -12,7 +12,7 @@ enclave(2,
  
  end;
 );
-set(cnd);
 kill(1);
 kill(2);
+set(cnd);
 Output *l3 to L ;

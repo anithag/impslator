@@ -9,7 +9,7 @@
 %token <string> VAR
 %token <string> LITERAL 
 %token <char> CHANNEL
-%token PLUS MODULO UNDERSCORE LPAREN RPAREN LCURLY RCURLY COMMA SEQ COLON DOT NEQUALS EQUALS TRUE FALSE CALL
+%token PLUS MINUS TIMES MODULO UNDERSCORE LPAREN RPAREN LCURLY RCURLY COMMA SEQ COLON DOT NEQUALS EQUALS TRUE FALSE CALL
        IF THEN ELSE ENDIF LAMBDA EOF DEREF UPDATE SET ISUNSET  OUTPUT ASSIGN SKIP WHILE DO END
        INT BOOL  STRING COND FUNC REF LOW HIGH ERASE CHANNEL DECLASSIFY TOP FST SND LSQBR RSQBR 
        LESSTHAN 
@@ -91,6 +91,8 @@ aexp: 	VAR                          { Var $1}
     | INTEGER                      { Constant($1) }
     | LOC			   { Loc($1) }
     | aexp PLUS aexp 		   { Plus($1, $3) }
+    | aexp MINUS aexp 		   { Plus($1, $3) }
+    | aexp TIMES aexp 		   { Plus($1, $3) }
     | aexp MODULO aexp 		   { Modulo($1, $3) }
     | LPAREN DEREF exp	RPAREN	   { Deref($3) }
 sexp: LITERAL			   { Literal($1) }

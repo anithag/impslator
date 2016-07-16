@@ -21,6 +21,7 @@ l9: int_low^(0, -1) ref_low;
 
  (# Enclave Program #)
 log:= l1;
+kill(2);
 exit:= l5;
 join:= l6;
 receive:= l7;
@@ -67,7 +68,6 @@ join <- 0 ;
 log:= l9;
  
  end;
-displaymsg:= "Bye";
 kill(1);
-kill(2);
+displaymsg:= "Bye";
 Output displaymsg to L ;

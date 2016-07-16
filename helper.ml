@@ -11,6 +11,10 @@ let labnotlow = function
  | Low -> false
  | _ -> true
 
+let is_array_type = function
+ |BtArray (s,li), _ -> true
+ | _ -> false
+
 let get_mode = function
 | EBtRef(mu', lt), p -> mu'
 | EBtArray(mu',_,_), p -> mu'

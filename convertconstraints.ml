@@ -21,23 +21,35 @@ let rec convertconstr c1 c2 = function
 					let c3'' = Constr2.add (Modecond(mu2, 0), Modecond(mu1, 0)) c3' in
 
 					(* Match on enclave identifiers as well i.e., 
-					   mu1 =1 /\ eidlist1[i]=1 -> eidlist2[i] = 1 
-					   mu1 =1 /\ eidlist1[i]=0 -> eidlist2[i] = 0 
-					   mu2 =1 /\ eidlist2[i]=1 -> eidlist1[i] = 1 
-					   mu2 =1 /\ eidlist2[i]=0 -> eidlist1[i] = 0 
+					   mu1 =1 /\ eidlist1[i]=0 /\ eidlist1[i+1]= 1 -> eidlist2[i] = 0 /\ eidlist[i+1] =1 
+					   mu1 =1 /\ eidlist1[i]=1 /\ eidlist1[i+1]= 0 -> eidlist2[i] = 1 /\ eidlist[i+1] =0 
+					   mu2 =1 /\ eidlist2[i]=1 /\ eidlist2[i+1] = 0 -> eidlist1[i] = 1 /\ eidlist1[i+1] = 0
+					   mu2 =1 /\ eidlist2[i]=0 /\ eidlist2[i+1] = 1 -> eidlist1[i] = 0 /\ eidlist1[i+1] = 1
 					*)
 					let eidlst1 = get_mode_eidlist muvar1 in
 					let eidlst2 = get_mode_eidlist muvar2 in 
-					let rec loop c2 = function
+					let rec loop c2 pre1 pre2 = function
 					  |[], [] -> c2
-					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
-									let c2'' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
-									let c3 = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
-									let c3' = Constr2.add  (Dnfclause ([Modecond(mu2,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3 in 
-									
-									loop c3' (tail1, tail2)
-					in 
-					let c4 = loop c3''  (eidlst1, eidlst2) in
+					  | xs1::tail1, xs2::tail2 ->   
+								let rec innerloop condlst1 condlst2 pretail1 pretail2 = begin match (pretail1, pretail2) with 
+									|[], [] -> (condlst1, condlst2)
+									|ps1::ptail1, ps2::ptail2 -> 
+												 let condlst1' = (condlst1@[Eidcond(ps1,0)]) in
+												 let condlst2' = (condlst2@[Eidcond(ps2,0)]) in
+								   
+												 innerloop condlst1' condlst2' ptail1 ptail2
+									end in
+								let (condlst1, condlst2) = innerloop [Eidcond(xs1, 1)] [Eidcond(xs2, 1)] (pre1@tail1) (pre2@tail2) in
+								let rec addsingleconstraint c2 condlst2  = begin match condlst2 with
+									|[] -> c2
+									|c::ctail ->
+										let c2' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@condlst1), c) c2 in 
+										addsingleconstraint c2' ctail
+									end in
+								let c2' = addsingleconstraint c2  condlst2 in
+								loop c2' (pre1@[xs1]) (pre2@[xs2]) (tail1, tail2)
+					in
+					let c4 = loop c3'' [] [] (eidlst1, eidlst2) in
 					(c1, c4)
 
 | ModenotKilled(muvar, k) 		(* μ \not \in K *) ->
@@ -62,24 +74,36 @@ let rec convertconstr c1 c2 = function
 					let c2' = Constr2.add (Modecond(mu1, 1), Modecond(mu2, 1)) c2 in
 
 					(* Match on enclave identifiers as well i.e., 
-					   mu1 =1 /\ eidlist1[i]=1 -> eidlist2[i] = 1 
-					   mu1 =1 /\ eidlist1[i]=0 -> eidlist2[i] = 0 
-					   mu1 =1 /\ eidlist2[i]=1 -> eidlist1[i] = 1 
-					   mu1 =1 /\ eidlist2[i]=0 -> eidlist1[i] = 0 
+					   mu1 =1 /\ eidlist1[i]=0 /\ eidlist1[i+1]= 1 -> eidlist2[i] = 0 /\ eidlist[i+1] =1 
+					   mu1 =1 /\ eidlist1[i]=1 /\ eidlist1[i+1]= 0 -> eidlist2[i] = 1 /\ eidlist[i+1] =0 
+					   mu2 =1 /\ eidlist2[i]=1 /\ eidlist2[i+1] = 0 -> eidlist1[i] = 1 /\ eidlist1[i+1] = 0
+					   mu2 =1 /\ eidlist2[i]=0 /\ eidlist2[i+1] = 1 -> eidlist1[i] = 0 /\ eidlist1[i+1] = 1
 					*)
 					let eidlst1 = get_mode_eidlist muvar1 in
 					let eidlst2 = get_mode_eidlist muvar2 in 
-					let rec loop c2 = function
+					let rec loop c2 pre1 pre2 = function
 					  |[], [] -> c2
-					  | xs1::tail1, xs2::tail2 -> let c2' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 1)]), Eidcond(xs2, 1)) c2 in 
-									let c2'' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs1, 0)]), Eidcond(xs2, 0)) c2' in 
-									let c3 = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs2, 1)]), Eidcond(xs1, 1)) c2'' in 
-									let c3' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@[Eidcond(xs2, 0)]), Eidcond(xs1, 0)) c3 in 
-
-									loop c3' (tail1, tail2)
-					in 
-					let c3 = loop c2'  (eidlst1, eidlst2) in
-					(c1, c3)
+					  | xs1::tail1, xs2::tail2 ->   
+								let rec innerloop condlst1 condlst2 pretail1 pretail2 = begin match (pretail1, pretail2) with 
+									|[], [] -> (condlst1, condlst2)
+									|ps1::ptail1, ps2::ptail2 -> 
+												 let condlst1' = (condlst1@[Eidcond(ps1,0)]) in
+												 let condlst2' = (condlst2@[Eidcond(ps2,0)]) in
+								   
+												 innerloop condlst1' condlst2' ptail1 ptail2
+									end in
+								let (condlst1, condlst2) = innerloop [Eidcond(xs1, 1)] [Eidcond(xs2, 1)] (pre1@tail1) (pre2@tail2) in
+								let rec addsingleconstraint c2 condlst2  = begin match condlst2 with
+									|[] -> c2
+									|c::ctail ->
+										let c2' = Constr2.add  (Dnfclause ([Modecond(mu1,1)]@condlst1), c) c2 in 
+										addsingleconstraint c2' ctail
+									end in
+								let c2' = addsingleconstraint c2  condlst2 in
+								loop c2' (pre1@[xs1]) (pre2@[xs2]) (tail1, tail2)
+					in
+					let c4 = loop c2' [] [] (eidlst1, eidlst2) in
+					(c1, c4)
 
 | ModenotNimpliesNoKill(muvar,k)  	(* μ = 1 -> K'' = Ø *) ->
 					let mu = get_mode_var muvar in
@@ -94,6 +118,38 @@ let rec convertconstr c1 c2 = function
 					let c3 = loop c2  k in
 					(c1, c3)
 					
+| ModeEqimpliesNoKill(muvar1,muvar2, k) (* μ1=μ2 /\ μ1=1 /\ μ2=1  -> k = Ø *) ->
+					let mu1 = get_mode_var muvar1 in
+					let mu2 = get_mode_var muvar2 in
+
+					let eidlst1 = get_mode_eidlist muvar1 in
+					let eidlst2 = get_mode_eidlist muvar2 in 
+
+					(* μ1=μ2 /\ μ1=1 /\ μ2= 1-> k1[i] = 0 
+					 *)
+					let rec loop c2 k = begin match k with
+					| [] -> c2
+					| xs3::ktail3 -> 
+							let condlst = ([Modecond(mu1,1)]@[Modecond(mu2,1)]) in
+							let rec innerloop c3 pre1 pre2 eidlst1 eidlst2 = begin match (eidlst1, eidlst2) with
+					 			|[],[]-> c3 
+					  			|xs1::ktail1, xs2::ktail2 -> 
+									let rec innerloop2 condlst pretail1 pretail2 = begin match (pretail1, pretail2) with 
+										|[], [] -> condlst
+										|ps1::ptail1, ps2::ptail2 -> 
+												 let condlst' = (condlst@[Eidcond(ps1,0);Eidcond(ps2,0)]) in
+												 innerloop2 condlst' ptail1 ptail2
+									end in
+									let condlst' = innerloop2 (condlst@[Eidcond(xs1, 1);Eidcond(xs2,1)]) (pre1@ktail1) (pre2@ktail2) in
+									let c4 = Constr2.add  (Dnfclause condlst', Eidcond(xs3, 0)) c3 in 
+									innerloop c4 (pre1@[xs1]) (pre2@[xs2]) ktail1 ktail2 
+							end in 
+							let c4 = innerloop c2 [] []  eidlst1 eidlst2 in
+							loop c4 ktail3 
+					end in
+					let c5 = loop c2 k in
+					(c1, c5)
+
 | KillUnion(k1, k2, k3) 		(* K1 = K' U K'' *) ->
 					(* k1[i] = 0 -> k2[i]=0 /\ k3[i] = 0
 					   k2[i] = 0 /\ k3[i] = 0 -> k1[i] = 0 

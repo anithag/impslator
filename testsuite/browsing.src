@@ -1,24 +1,33 @@
 (# modeling private browsing#)
 
-(# l1: status of private browsing mode #)
-l1: int_high~top,cnd ref_low;
+(# l2: private url array#)
+l2: (string_high~top,cnd [5])_high~top,cnd ref_low;
+l3: string_high~top,cnd ref_low;
+l4: string_high~top,cnd ref_low;
+l5: string_high~top,cnd ref_low;
+l6: string_high~top,cnd ref_low;
+l7: string_high~top,cnd ref_low;
 
-(# l2: private url #)
-l2: int_high~top,cnd ref_low;
-
-(# l3: public url #)
-l3: int_low ref_low;
+(# l8: public url #)
+l8: string_low ref_low;
+urllist: (string_high~top,cnd [5])_high~top,cnd;
+counter: int_low;
 cnd: cond_low
 
 (# until private mode is turned off, output the private browsing history
    to high channel. 
 #)
-while (*l1) == 1 do
- output(H, (*l2));
+l2 <- (l3,l4,l5,l6,l7);
+urllist := (*l2);
+counter := 0;
+while counter < 5 do
+ output(H, (*urllist[counter]));
+ counter := counter + 1;
 end;
+urllist := "0";
 
 (# Set the condition to indicate that the history should be erased #)
 set(cnd);
 
 (# Resume normal browsing #)
-output(L, (*l3));
+output(L, (*l8));

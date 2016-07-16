@@ -40,6 +40,8 @@ rule token = parse
 | "=="     { EQUALS }
 | "!="     { NEQUALS }
 | "+"     { PLUS }
+| "-"     { MINUS}
+| "^"     { TIMES }
 | "%"     { MODULO  }
 | "<"	  { LESSTHAN}
 | "("     { LPAREN }
