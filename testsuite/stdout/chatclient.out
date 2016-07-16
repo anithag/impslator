@@ -5,14 +5,14 @@ displaymsg: string_low;
 erasechat: int_low^(1, 2) ref_low;
 exit: int_low^(1, 2) ref_low;
 join: int_low^(1, 2) ref_low;
-log: int_high /clear T^(1, 2) ref_low;
+log: string_high /clear T^(1, 2) ref_low;
 receive: int_low^(1, 2) ref_low;
 recvmsg: string_low;
 send: int_low^(1, 2) ref_low;
 sendmsg: string_low;
 l1: int_high /clear T^(1, 1) ref_low;
-l2: string_low^(0, -1) ref_low;
-l3: string_low^(0, -1) ref_low;
+l2: string_high /cnd T^(1, 1) ref_low;
+l3: string_high /cnd T^(1, 1) ref_low;
 l5: int_low^(0, -1) ref_low;
 l6: int_low^(0, -1) ref_low;
 l7: int_low^(0, -1) ref_low;
@@ -30,21 +30,23 @@ erasechat:= l9;
 while *exit == 1 do 
  while *join == 1 do 
  if *receive == 1 then 
+ enclave(1, 
  recvmsg:= *l2;
-enclave(1, 
- log <- recvmsg;
-);
+log <- recvmsg ;
 displaymsg:= "received";
 Output displaymsg to L ;
+recvmsg:= "0";
+);
 receive <- 0 ;
  
  else 
  if *send == 1 then 
+ enclave(1, 
  sendmsg:= *l3;
-enclave(1, 
- log <- sendmsg;
-);
+log <- sendmsg ;
 Output sendmsg to L ;
+sendmsg:= "0";
+);
 send <- 0 ;
  
  else 

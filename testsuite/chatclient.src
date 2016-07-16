@@ -3,10 +3,10 @@
 l1: int_high~top,clear ref_low; 
 
 (# l2: location for recv mesg #)
-l2: string_low ref_low; 
+l2: string_high~top,cnd ref_low; 
 
 (# l3: location for send mesg #)
-l3: string_low ref_low; 
+l3: string_high~top,cnd ref_low; 
 
 (# location for commands #)
 l5: int_low ref_low;
@@ -16,7 +16,7 @@ l8: int_low ref_low;
 l9: int_low ref_low;
 
 (# Variables that read from locations #)
-log: int_high~top,clear ref_low; 
+log: string_high~top,clear ref_low; 
 exit : int_low ref_low;
 join: int_low ref_low;
 send: int_low ref_low;
@@ -51,12 +51,14 @@ while (*exit) == 1 do
 		log <- recvmsg;
 		displaymsg := "received";
 		output(L, displaymsg);
+		recvmsg := "0";
 		receive <- 0;
 	else
 	  if (*send) == 1 then
 		sendmsg := (*l3);
 		log <- sendmsg;
 		output(L, sendmsg);
+		sendmsg := "0";
 		send <- 0;
 	  else 
 	    if (*erasechat) == 1 then
