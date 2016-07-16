@@ -31,8 +31,6 @@ while idx < numops do
  op1:= *l7[stop-1];
 op2:= *l7[stop];
 *l7[stop-1] <- *op1 + *op2 ;
-stop:= stop + 1;
-Output *op1 to H ;
 op1:= 0;
 op2:= 0;
 );
@@ -43,8 +41,6 @@ op2:= 0;
  op1:= *l7[stop-1];
 op2:= *l7[stop];
 *l7[stop-1] <- *op1 + *op2 ;
-stop:= stop + 1;
-Output *op1 to H ;
 op1:= 0;
 op2:= 0;
 );
@@ -55,8 +51,6 @@ op2:= 0;
  op1:= *l7[stop-1];
 op2:= *l7[stop];
 *l7[stop-1] <- *op1 + *op2 ;
-stop:= stop + 1;
-Output *op1 to H ;
 op1:= 0;
 op2:= 0;
 );
@@ -69,6 +63,10 @@ op2:= 0;
  fi;
  
  fi;
+stop:= stop + 1;
+enclave(2, 
+ Output **l7[stop] to _;
+);
 idx:= idx + 1;
  
  end;
