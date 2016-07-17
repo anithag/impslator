@@ -605,38 +605,38 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 				    (* μ != N -> μi = μ *)
 				    let c5 = TConstraints.add (ModenotNimpliesEq(mu, mui)) c4 in
 
+				    (* μ != N -> K'' = Ø *)
+				    let c6 = TConstraints.add (ModenotNimpliesNoKill(mu, k'')) c5 in
+
 				    (* Check if genc' has any high registers. If yes, raise error. Translation not possible*)
 				    let allreglow = check_typing_context_reg_low genc' in
 
 				    if not (List.length tail = 0) then
 				    	let muj = next_tvar () in
-					let c5' = TConstraints.add (Enclaveid muj) c5 in
+					let c7 = TConstraints.add (Enclaveid muj) c6 in
 
-
-					(* μ != N -> K'' = Ø *)
-					let c6 = TConstraints.add (ModenotNimpliesNoKill(mu, k'')) c5' in
 
 					(* μi = μj /\ μi=1  -> K'' = Ø *)
-					let c6' = TConstraints.add (ModeEqimpliesNoKill(mui,muj, k'')) c6 in
+					let c8 = TConstraints.add (ModeEqimpliesNoKill(mui,muj, k'')) c7 in
 
-					let c8 = if (not allreglow) then 
+					let c10 = if (not allreglow) then 
 							(* ~isVarLowContext -> μi = μi+1 *)
-							let c7 = TConstraints.add (EnclaveExitimpliesModeEq(mui,muj)) c6' in
+							let c9 = TConstraints.add (EnclaveExitimpliesModeEq(mui,muj)) c8 in
 
 							(* ~isVarLowContext -> K'' = Ø *)
-							TConstraints.add (EnclaveExitimpliesKill(mui, k'')) c7 
+							TConstraints.add (EnclaveExitimpliesKill(mui, k'')) c9
 						 else 
-							c6'
+							c8
 					in
 		
-				     	seqloop (TConstraints.union c1 c8) muj g' genc' kj (tstmtlist@[(tstmt1, k'')]) tail
+				     	seqloop (TConstraints.union c1 c10) muj g' genc' kj (tstmtlist@[(tstmt1, k'')]) tail
 
 				    (* Last instruction in the sequence *)
 				     else
 					if (not allreglow && istoplevel) then 
 						raise (TranslationError "Registers may contain secrets when exiting enclave.")
 					else
-				     		seqloop (TConstraints.union c1 c5) mui g' genc' kj (tstmtlist@[(tstmt1, k'')])  tail
+				     		seqloop (TConstraints.union c1 c6) mui g' genc' kj (tstmtlist@[(tstmt1, k'')])  tail
 		     in
 		     let mu1 = next_tvar () in
 		     let c', srcgamma', gamma', k', tstmtlist = seqloop (TConstraints.add (Enclaveid mu1) TConstraints.empty) mu1 srcgamma gamma k [] seqlist in
@@ -710,8 +710,8 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 				TConstraints.add (ModeisN (mu, 1)) c4
 			    else
 				c4 in
-		   let c6 = TConstraints.add (ModenotKilled (mu, k)) c5 in
-		   let c7  =TConstraints.add (Enclaveid mu1) c6 in
+		   let c6  = TConstraints.add (ModenotKilled (mu, k)) c5 in
+		   let c7  = TConstraints.add (Enclaveid mu1) c6 in
 		   (* μ !=N => μ = μ' *)
 		   let c8 = TConstraints.add (ModenotNimpliesEq(mu, mu1)) c7 in
 		   let tstmt = TWhile(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ence, tstmt1, gamma', k1) in
@@ -894,7 +894,7 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 
 		    (* gamma and delta need not be updated *)
 		    let texp = TExp(srcgamma,e,srctype, mu,gamma'',delta,ence,enctype) in
-		    (c1, texp)
+		    (TConstraints.union c1 c2, texp)
  | Deref e'     ->
 		 let b = get_exp_type srcgamma e' in 
 		 let c1, texp = gen_constraints_exp srcgamma e' b mu gamma delta  in

@@ -97,7 +97,6 @@ key:= "-1";
 sum:= 0;
  
  end;
-kill(1);
 );
 call(reduce);
 len:= 0;
@@ -110,6 +109,7 @@ tmpidx:= 0;
 outidx:= 0;
 key:= "0";
 );
+kill(1);
 kill(2);
 map:= (lambda^(0, -1)(_,_,_,_,_).skip;
 kill(1);

@@ -5,10 +5,8 @@ z:=1;
 r:=3;
 if y1==1 then
 	y1:=r;
-	r:=r+1;
 else
 	y1:= z + 2;
-	z:=z+2;
 fi;
 y1:=0;
 r:=0;

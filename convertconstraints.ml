@@ -256,25 +256,24 @@ let rec convertconstr c1 c2 = function
 					let rec loop1 dnflist = function
 					| [] -> dnflist
 					| xs1::tail -> 
-						       loop1 (dnflist@[Modecond (xs1, 0)]) tail
+						       loop1 (dnflist@[Eidcond (xs1, 0)]) tail
 					in
 					let dnflist = loop1 [] eidlst in
 					let c3 = Constr2.add ((Dnfclause dnflist), Modecond (mu,0))  c2 in 
 					
 					(* Ensures that only one identifier is set *)
-					let rec loop2 c4 = function
+					let rec loop2 pre c4 = function
 					| [] -> c4
 					| xs1::tail -> let rec innerloop c5 = function
 							|[] -> c5
 							|xs2::tail'->
 									let c5' = Constr2.add (Dnfclause ([Modecond(mu,1)]@[Eidcond (xs1, 1)]), Eidcond (xs2,0)) c5 in
-									let c5'' = Constr2.add (Dnfclause ([Modecond(mu,1)]@[Eidcond (xs2, 1)]), Eidcond (xs1,0)) c5' in
-									innerloop c5'' tail'
+									innerloop c5' tail'
 							in 
-							let c6 = innerloop c4 tail in
-							loop2 c6 tail
+							let c6 = innerloop c4 (pre@tail) in
+							loop2 (pre@[xs1]) c6 tail
 					in 
-					let c7 = loop2 c3 eidlst in
+					let c7 = loop2 [] c3 eidlst in
 					(c1, c7)
 
 let rec convertconstraints c1 c2 tconstrset =
