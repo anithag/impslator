@@ -1,5 +1,6 @@
 (# Case study to illustrate TCB minimization #)
 
+(# input operator array #)
 l1: (string_low [5])_low ref_low;
 l2: string_low ref_low;
 l3: string_low ref_low;
@@ -7,9 +8,14 @@ l4: string_low ref_low;
 l5: string_low ref_low;
 l6: string_low ref_low;
 
-l7: (int_high [2])_high ref_low;
+(# input data stack #)
+l7: (int_high [6])_high ref_low;
 l8: int_high ref_low;
 l9: int_high ref_low;
+l10: int_high ref_low;
+l11: int_high ref_low;
+l12: int_high ref_low;
+l12: int_high ref_low;
 
 ops: (string_low [5])_low;
 numops: int_low;
@@ -21,9 +27,12 @@ stop: int_low
 l1 <- (l2, l3, l4, l5, l6);
 l7 <- (l8, l9);
 
+(# initialize operator #)
 ops := (*l1);
 numops := 5;
 idx:=0;
+
+(# Compute and output until the operator array is consumed #) 
 while idx < numops do
 	if (*ops[idx]) == "add" then 
 		op1 := (*l7)[stop-1];

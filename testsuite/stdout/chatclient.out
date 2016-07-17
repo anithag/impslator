@@ -1,18 +1,18 @@
 
  (# Enclave Type Declarations #)
-clear: cond^(1, 2)_low;
+clear: cond^(0, -1)_low;
 displaymsg: string_low;
-erasechat: int_low^(1, 2) ref_low;
-exit: int_low^(1, 2) ref_low;
-join: int_low^(1, 2) ref_low;
-log: string_high /clear T^(1, 2) ref_low;
-receive: int_low^(1, 2) ref_low;
+erasechat: int_low^(0, -1) ref_low;
+exit: int_low^(0, -1) ref_low;
+join: int_low^(0, -1) ref_low;
+log: string_high /clear T^(0, -1) ref_low;
+receive: int_low^(0, -1) ref_low;
 recvmsg: string_low;
-send: int_low^(1, 2) ref_low;
+send: int_low^(0, -1) ref_low;
 sendmsg: string_low;
-l1: int_high /clear T^(1, 1) ref_low;
-l2: string_high /cnd T^(1, 1) ref_low;
-l3: string_high /cnd T^(1, 1) ref_low;
+l1: int_high /clear T^(1, 2) ref_low;
+l2: string_high /cnd T^(1, 2) ref_low;
+l3: string_high /cnd T^(1, 2) ref_low;
 l5: int_low^(0, -1) ref_low;
 l6: int_low^(0, -1) ref_low;
 l7: int_low^(0, -1) ref_low;
@@ -21,7 +21,7 @@ l9: int_low^(0, -1) ref_low;
 
  (# Enclave Program #)
 log:= l1;
-kill(2);
+kill(1);
 exit:= l5;
 join:= l6;
 receive:= l7;
@@ -30,7 +30,7 @@ erasechat:= l9;
 while *exit == 1 do 
  while *join == 1 do 
  if *receive == 1 then 
- enclave(1, 
+ enclave(2, 
  recvmsg:= *l2;
 log <- recvmsg ;
 displaymsg:= "received";
@@ -41,7 +41,7 @@ receive <- 0 ;
  
  else 
  if *send == 1 then 
- enclave(1, 
+ enclave(2, 
  sendmsg:= *l3;
 log <- sendmsg ;
 Output sendmsg to L ;
@@ -51,7 +51,7 @@ send <- 0 ;
  
  else 
  if *erasechat == 1 then 
- enclave(1, 
+ enclave(2, 
  log <- "0";
 );
 set(clear);
@@ -70,6 +70,6 @@ join <- 0 ;
 log:= l9;
  
  end;
-kill(1);
+kill(2);
 displaymsg:= "Bye";
 Output displaymsg to L ;

@@ -1,18 +1,29 @@
 
  (# Enclave Type Declarations #)
-cnd: cond^(1, 2)_low;
-l1: int_high /cnd T^(1, 2) ref_low;
-l2: int_high /cnd T^(1, 2) ref_low;
-l3: int_low^(0, -1) ref_low;
+cnd: cond^(0, -1)_low;
+counter: int_low;
+urllist: (string_high /cnd T^(0, -1) [5])_high /cnd T;
+l2: (string_high /cnd T^(1, 2) [5])_high /cnd T^(1, 2) ref_low;
+l3: string_high /cnd T^(1, 2) ref_low;
+l4: string_high /cnd T^(1, 2) ref_low;
+l5: string_high /cnd T^(1, 2) ref_low;
+l6: string_high /cnd T^(1, 2) ref_low;
+l7: string_high /cnd T^(1, 2) ref_low;
+l8: string_low^(0, -1) ref_low;
 
  (# Enclave Program #)
 enclave(2, 
- while *l1 == 1 do 
- Output *l2 to H ;
+ l2 <- (l3,l4,l5,l6,l7,);
+urllist:= *l2;
+counter:= 0;
+while counter < 5 do 
+ Output *urllist[counter] to H ;
+counter:= counter + 1;
  
  end;
+urllist:= "0";
 );
 kill(1);
 kill(2);
 set(cnd);
-Output *l3 to L ;
+Output *l8 to L ;

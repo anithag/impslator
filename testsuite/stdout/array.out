@@ -1,17 +1,16 @@
 
  (# Enclave Type Declarations #)
-y1: ((string, int)_high^(1, 2) [2])_high;
-l1: ((string, int)_high^(1, 2) [2])_high^(1, 2) ref_low;
-l2: ((string, int)_high^(1, 2) [2])_low^(1, 2) ref_low;
-l3: (string, int)_low^(1, 2) ref_low;
-l4: (string, int)_low^(1, 2) ref_low;
+y1: ((string, int)_high^(0, -1) [2])_low;
+l2: ((string, int)_high^(1, 2) [2])_low^(0, -1) ref_low;
+l5: (string, int)_high^(1, 2) ref_low;
+l6: (string, int)_high^(1, 2) ref_low;
 
  (# Enclave Program #)
-enclave(2, 
- l1 <- (l3,l4,);
-y1[1] <- *l1[1] ;
-y1[0] <- *l1[0] ;
-y1:= l2;
-);
+l2 <- (l5,l6,) ;
 kill(1);
+y1:= *l2;
+enclave(2, 
+ y1[1] <- *y1[1];
+y1[0] <- *y1[0] ;
+);
 kill(2);
