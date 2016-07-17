@@ -267,8 +267,8 @@ let rec convertconstr c1 c2 = function
 					| xs1::tail -> let rec innerloop c5 = function
 							|[] -> c5
 							|xs2::tail'->
-									let c5' = Constr2.add (Modecond (xs1, 1), Modecond (xs2,0)) c5 in
-									let c5'' = Constr2.add (Modecond (xs2, 1), Modecond (xs1,0)) c5' in
+									let c5' = Constr2.add (Dnfclause ([Modecond(mu,1)]@[Eidcond (xs1, 1)]), Eidcond (xs2,0)) c5 in
+									let c5'' = Constr2.add (Dnfclause ([Modecond(mu,1)]@[Eidcond (xs2, 1)]), Eidcond (xs1,0)) c5' in
 									innerloop c5'' tail'
 							in 
 							let c6 = innerloop c4 tail in

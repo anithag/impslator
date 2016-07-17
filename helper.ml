@@ -15,6 +15,10 @@ let is_array_type = function
  |BtArray (s,li), _ -> true
  | _ -> false
 
+let get_content_type = function
+| EBtRef(mu', lt), p -> lt
+| _, q ->raise (HelperError "Expected Ref") 
+
 let get_mode = function
 | EBtRef(mu', lt), p -> mu'
 | EBtArray(mu',_,_), p -> mu'

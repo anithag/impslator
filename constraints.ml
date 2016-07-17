@@ -575,18 +575,15 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		 let c3 = TConstraints.union c1 c2 in
 		 let encb1 = get_enc_exp_type gamma' ence1 in 
 		 let mu' = get_mode encb1 in 
+		 let cnttype = get_content_type encb1 in
+		 let encb2 = get_enc_exp_type gamma' ence2 in 
+		 (* cnttype and encb2 should match *)
 		 (* μ' ≠ N => μ' = μ *)
 		 let c4 = TConstraints.add  (ModenotNimpliesEq (mu', mu)) c3 in
-		 (* FIXME: This is not required *)
-		 let c4' = if isarraytype then
-		 		let encb2 = get_enc_exp_type gamma' ence2 in 
-				let mu2   = get_mode encb2 in 
-				TConstraints.add (ModeEqual (mu', mu2)) c4 
-			   else
-				c4 
-			   in
-		 let c5 = TConstraints.add (ModenotKilled (mu, k)) c4' in
-		 (c5, tstmt)
+		 let c5 = gen_constraints_type cnttype encb2 in
+		 let c6 = TConstraints.union c4 c5 in
+		 let c7 = TConstraints.add (ModenotKilled (mu, k)) c6 in
+		 (c7, tstmt)
  |Seq slist      -> let seqlist = slist in
 			let rec seqloop c1 mui g genc ki tstmtlist = function
 			| [] -> (c1, g, genc, ki, tstmtlist)
@@ -605,19 +602,19 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 				    (* Kj = K' U K'' *)
 				    let c4 = TConstraints.add (KillUnion(kj, k', k'')) c3 in
 
+				    (* μ != N -> μi = μ *)
+				    let c5 = TConstraints.add (ModenotNimpliesEq(mu, mui)) c4 in
+
 				    (* Check if genc' has any high registers. If yes, raise error. Translation not possible*)
 				    let allreglow = check_typing_context_reg_low genc' in
 
 				    if not (List.length tail = 0) then
 				    	let muj = next_tvar () in
-					let c4' = TConstraints.add (Enclaveid muj) c4 in
-
-					(* μ != N -> μi = μ *)
-					let c5 = TConstraints.add (ModenotNimpliesEq(mu, mui)) c4' in
+					let c5' = TConstraints.add (Enclaveid muj) c5 in
 
 
 					(* μ != N -> K'' = Ø *)
-					let c6 = TConstraints.add (ModenotNimpliesNoKill(mu, k'')) c5 in
+					let c6 = TConstraints.add (ModenotNimpliesNoKill(mu, k'')) c5' in
 
 					(* μi = μj /\ μi=1  -> K'' = Ø *)
 					let c6' = TConstraints.add (ModeEqimpliesNoKill(mui,muj, k'')) c6 in
@@ -639,7 +636,7 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 					if (not allreglow && istoplevel) then 
 						raise (TranslationError "Registers may contain secrets when exiting enclave.")
 					else
-				     		seqloop (TConstraints.union c1 c4) mui g' genc' kj (tstmtlist@[(tstmt1, k'')])  tail
+				     		seqloop (TConstraints.union c1 c5) mui g' genc' kj (tstmtlist@[(tstmt1, k'')])  tail
 		     in
 		     let mu1 = next_tvar () in
 		     let c', srcgamma', gamma', k', tstmtlist = seqloop (TConstraints.add (Enclaveid mu1) TConstraints.empty) mu1 srcgamma gamma k [] seqlist in
@@ -681,8 +678,13 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		   let c9  =TConstraints.add (Enclaveid mu1) c8 in
 		   let c10  =TConstraints.add (Enclaveid mu1) c9 in
 		   let k' = k1 in (* k1 or k2 does not matter, because k1 = k2 *)
+
+		   (* μ != N => μ = μ1 = μ2 *)
+		   let c11 = TConstraints.add (ModenotNimpliesEq(mu, mu1)) c10 in
+		   let c12 = TConstraints.add (ModenotNimpliesEq(mu, mu2)) c11 in
+
 		   let tstmt = TIf(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ence, tstmt1, tstmt2, gamma', k') in
- 		   (c10, tstmt)
+ 		   (c12, tstmt)
  |While (e, s1) ->let b = get_exp_type srcgamma e in 
 		   let c, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
 		   let encgamma = get_translated_exp_gamma texp in
@@ -710,13 +712,14 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 				c4 in
 		   let c6 = TConstraints.add (ModenotKilled (mu, k)) c5 in
 		   let c7  =TConstraints.add (Enclaveid mu1) c6 in
+		   (* μ !=N => μ = μ' *)
+		   let c8 = TConstraints.add (ModenotNimpliesEq(mu, mu1)) c7 in
 		   let tstmt = TWhile(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ence, tstmt1, gamma', k1) in
- 		   (c7, tstmt)
+ 		   (c8, tstmt)
  |Call(e) 	->let b = get_exp_type srcgamma e in 
 		  let c, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
 		  let encgamma = get_translated_exp_gamma texp in
 		  let enctype = get_translated_exp_type texp in
-		  let encgammaplus = get_enc_postcontext enctype in
 		  let prekill = get_prekillset enctype in
 		  let postkill = get_postkillset enctype in
 		  let c1 = TConstraints.add (KillEq (k, prekill)) c in
@@ -724,12 +727,27 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 
 		  let ence = get_translated_exp texp in
 		  let encs =  ECall(ence) in 
-		  (* FIXME: Prepare gammaout = encgammaplus U encgamma *)
-		  let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
-		  let gamma' =  enc_flow_sensitive_type_infer pc encgamma encs in
 
-		  let tstmt = TCall(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, texp, gamma', postkill) in
-		  (c2, tstmt)
+
+		  (* FIXME: Prepare gammaout = encgammaplus U encgamma *)
+		  let srcgammaout = src_flow_sensitive_type_infer pc srcgamma s in
+		  let gammaout =  enc_flow_sensitive_type_infer pc encgamma encs in
+
+		  (* Generate constraints Γ ≤ Γ- and Γout ≥ Γ+ *) 
+		  let encgammaminus = get_enc_precontext enctype in
+		  let encgammaplus = get_enc_postcontext enctype in
+		  let  c3 =  VarLocMap.fold (fun key value c -> let c' = gen_constraints_type value (VarLocMap.find key gamma) in
+							   TConstraints.union c c' 
+				       )  encgammaminus c2 in   
+		  let  c4 =  VarLocMap.fold (fun key value c -> let c' = gen_constraints_type value (VarLocMap.find key gammaout) in
+							   TConstraints.union c c' 
+				       )  encgammaplus c3 in   
+
+		  (* Modes must be equal *)
+		  let muf = get_mode enctype in
+		  let c5 = TConstraints.add (ModeEqual (mu, muf)) c4 in 
+		  let tstmt = TCall(pc,srcgamma,setu,srcgammaout,s,mu,gamma, k, delta, texp, gammaout, postkill) in
+		  (c5, tstmt)
  | Skip 	-> let encs = ESkip in
 		  let tstmt = TSkip(pc,srcgamma,setu,srcgamma,s,mu,gamma, k, delta, encs, gamma, k) in
 		  let c1 = TConstraints.add (ModenotKilled (mu, k)) TConstraints.empty in
@@ -745,9 +763,11 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		 let gammatmp1 = get_translated_exp_gamma texp1 in
 		 let ence = get_translated_exp texp1 in
 		 let encs =  EOutput(ell, ence) in 
+		
 		 (* update gamma *)
 		 let srcgamma' = src_flow_sensitive_type_infer pc srcgamma s in
 		 let gamma' =  enc_flow_sensitive_type_infer pc gammatmp1 encs in
+
 		 let tstmt = TOut(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ell, texp1, gamma', k) in
 		 (c2, tstmt)
 		   
@@ -1031,7 +1051,8 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 
 and gen_constraints_type (s1: enclabeltype) (s2:enclabeltype) = 
    match (s1, s2) with
-   |(EBtRef(m1,s1'), p), (EBtRef( m2, s2'), q) -> let t1 = gen_constraints_type s1' s2' in  [(m1, m2)]@t1 
+   |(EBtRef(m1,s1'), p), (EBtRef( m2, s2'), q) -> let t1 = gen_constraints_type s1' s2' in  (TConstraints.add (ModeEqual (m1, m2)) t1) 
+   |(EBtArray(m1,i1,s1'), p), (EBtArray(m2,i2,s2'), q) -> let t1 = gen_constraints_type s1' s2' in (TConstraints.add (ModeEqual (m1, m2)) t1) 
 							(* FIXME: equate gencpre1 and gencpre2; likewise equate gencpost1 and gencpost2 *)
    |(EBtFunc(m1, gencpre1,kpre1, p1, u1, gencpost1, kpost1), q1), (EBtFunc(m2, gencpre2, kpre2, p2, u2, gencpost2, kpost2), q2) -> 
 						let rec gen_constraints_type_for_context genc1 genc2 c =
@@ -1041,15 +1062,15 @@ and gen_constraints_type (s1: enclabeltype) (s2:enclabeltype) =
 										raise (TranslationError " Error in generating type constraints for functions ")) in
 									let c' = gen_constraints_type value1 value2 in
 									let genc1', genc2' = (VarLocMap.remove key genc1, VarLocMap.remove key genc2) in
-									gen_constraints_type_for_context genc1' genc2' c@c'
+									gen_constraints_type_for_context genc1' genc2' (TConstraints.union c c') 
 								else
 									c
 							in c'
 						in  
-						let c1 = gen_constraints_type_for_context gencpre1 gencpre2 [(m1, m2)] in
+						let c1 = gen_constraints_type_for_context gencpre1 gencpre2  (TConstraints.add (ModeEqual (m1, m2)) TConstraints.empty) in
 						let c2 = gen_constraints_type_for_context gencpost1 gencpost2 c1 in
 						c2
-   | _ -> []
+   | _ -> TConstraints.empty
      
 
 (* Add the constraint that a killed enclave is not killed again.
