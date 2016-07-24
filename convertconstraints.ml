@@ -276,6 +276,25 @@ let rec convertconstr c1 c2 = function
 					let c7 = loop2 [] c3 eidlst in
 					(c1, c7)
 
+ |UsedEnclave (k, mulist) 		->
+						(* k[i] = 1 <-> \/ mulist[i] = 1 *)
+						(* /\ mulist[i] =0 <-> k[i] = 0 *)
+						let rec loop c index = function
+						| [] -> c
+						| xs::tail -> let rec innerloop cond_li = function
+								| [] -> cond_li
+								|muxs::mutail -> let eidlist = get_mode_eidlist muxs in
+										innerloop (cond_li@[Eidcond(List.nth eidlist index, 0)]) mutail
+								in
+							     let cond_li = innerloop [] mulist in
+							     let c' = Constr2.add (Dnfclause cond_li, Eidcond (List.nth k index, 0)) c in 
+
+							     let c'' = Constr2.add (Eidcond (List.nth k index, 0), Dnfclause cond_li) c' in 
+							     loop c'' (index+1) tail
+						in
+						let c3 = loop c2 0 k in
+						(c1, c3) 
+
 let rec convertconstraints c1 c2 tconstrset =
     if (TConstraints.is_empty tconstrset) then
 			(c1, c2)

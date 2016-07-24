@@ -29,7 +29,8 @@ let () =
 
   let mu0 = next_tvar () in (* rho = Normal *)
   let k = gen_killset () in
-
+  let usedenclave = gen_killset () in
+  
   (* HACK: let delta be VarLocMap instead of LocMap for quick hack *)
   let (c0, delta, genc) = (Constraints.translategamma gammasrc) in
   let c, tstmt = (Constraints.gen_constraints_stmt Low gammasrc VarSet.empty stmt mu0 genc k delta) true in
@@ -47,8 +48,14 @@ let () =
   (* k = Ø *)
   let c''' = TConstraints.add (Killempty k) c' in
 
+
+  let mulist = get_enclaves_of_confidential_locations genc in
+
+  (* usedenclave[i] = 1 <-> \/ mulist[i] = 1 *)
+  let usedEncConstraints = TConstraints.add (UsedEnclave (usedenclave, mulist)) c''' in
+ 
   (* Convert translation constraints into proposition logic *)
-  let (c1, c2) = Convertconstraints.convertconstraints (Constr.empty) (Constr2.empty) c''' in
+  let (c1, c2) = Convertconstraints.convertconstraints (Constr.empty) (Constr2.empty) usedEncConstraints in
   
   (* No optimization for now *)
   let mu0var = get_mode_var mu0 in

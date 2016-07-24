@@ -185,6 +185,7 @@ type tconstraint =
 | KillEq  of killset * killset 			(* K1 = K2 *) 
 | Killempty of killset 				(* K = Ø *)
 | Enclaveid of mode				(* id1 =1 -> id2 = 0 /\ id3=0 ... *)
+| UsedEnclave of killset * (mode list)		(* k[i] = 1 <-> \/ mulist[i] = 1 *)
 
 
 module TConstraints = Set.Make (struct 

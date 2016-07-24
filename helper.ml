@@ -238,3 +238,16 @@ let get_killed_enclaves_list = function
 | TWhile(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _, _, gamma', k')
 | TCall(pc, srcgamma,setu,srcgamma',s,mu,gamma, k, delta, _,  gamma', k')->
 			[]
+
+
+let get_enclaves_of_confidential_locations genc = 
+	let confidential_map = VarLocMap.filter (fun key value -> begin match key with
+									|Reg v -> false
+									| Mem l -> let lt = get_content_type value in
+							    			begin match lt with
+										| (b, Low) -> false
+										| _ -> true
+							    			end
+								end	) genc in
+	VarLocMap.fold (fun key value li -> (li@[get_mode value])) confidential_map []  
+	
