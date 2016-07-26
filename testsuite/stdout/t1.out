@@ -7,7 +7,7 @@ name: (string_low^(0, -1) [5])_low;
 select: (int_low^(0, -1) [5])_low;
 sum: int_low;
 l1: (string_low^(0, -1) [5])_low^(0, -1) ref_low;
-l2: (int_low^(0, -1) [5])_high^(1, 2) ref_low;
+l2: (int_low^(0, -1) [5])_high^(1, 1) ref_low;
 l3: (int_low^(0, -1) [5])_low^(0, -1) ref_low;
 l11: string_low^(0, -1) ref_low;
 l12: string_low^(0, -1) ref_low;

@@ -17,7 +17,5 @@ if y1 == 1 then
  fi;
 y1:= 0;
 );
-kill(1);
-kill(2);
 r:= 0;
 z:= 0;

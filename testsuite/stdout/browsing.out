@@ -1,6 +1,6 @@
 
  (# Enclave Type Declarations #)
-cnd: cond^(0, -1)_low;
+cnd: cond^(1, 2)_low;
 counter: int_low;
 urllist: (string_high /cnd T^(0, -1) [5])_high /cnd T;
 l2: (string_high /cnd T^(1, 2) [5])_high /cnd T^(1, 2) ref_low;
@@ -23,7 +23,6 @@ counter:= counter + 1;
  end;
 urllist:= "0";
 );
-kill(1);
 kill(2);
 set(cnd);
 Output *l8 to L ;

@@ -2,10 +2,10 @@
  (# Enclave Type Declarations #)
 clear: cond^(0, -1)_low;
 displaymsg: string_low;
-erasechat: int_low^(0, -1) ref_low;
-exit: int_low^(0, -1) ref_low;
+erasechat: int_low^(1, 1) ref_low;
+exit: int_low^(1, 1) ref_low;
 join: int_low^(0, -1) ref_low;
-log: string_high /clear T^(0, -1) ref_low;
+log: string_high /clear T^(1, 2) ref_low;
 receive: int_low^(0, -1) ref_low;
 recvmsg: string_low;
 send: int_low^(0, -1) ref_low;
@@ -21,7 +21,6 @@ l9: int_low^(0, -1) ref_low;
 
  (# Enclave Program #)
 log:= l1;
-kill(1);
 exit:= l5;
 join:= l6;
 receive:= l7;

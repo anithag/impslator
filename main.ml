@@ -29,11 +29,11 @@ let () =
 
   let mu0 = next_tvar () in (* rho = Normal *)
   let k = gen_killset () in
-  let usedenclave = gen_killset () in
+  let usedenclave = gen_killset ()  in
   
   (* HACK: let delta be VarLocMap instead of LocMap for quick hack *)
   let (c0, delta, genc) = (Constraints.translategamma gammasrc) in
-  let c, tstmt = (Constraints.gen_constraints_stmt Low gammasrc VarSet.empty stmt mu0 genc k delta) true in
+  let c, tstmt = (Constraints.gen_constraints_stmt Low gammasrc VarSet.empty stmt mu0 genc k delta true usedenclave) in
 
   (* All killed enclaves should be disjoint *)
   let killc = gen_constraints_killsets tstmt c in

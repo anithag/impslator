@@ -7,7 +7,6 @@ l6: (string, int)_high^(1, 2) ref_low;
 
  (# Enclave Program #)
 l2 <- (l5,l6,) ;
-kill(1);
 y1:= *l2;
 enclave(2, 
  y1[1] <- *y1[1];

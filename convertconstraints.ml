@@ -294,6 +294,15 @@ let rec convertconstr c1 c2 = function
 						in
 						let c3 = loop c2 0 k in
 						(c1, c3) 
+|KillonlyUsedEnclave(k, usedenc) 	->
+						(* k[i] = 1 -> usedenc[i] =1 *)
+						let rec loop c = function
+							|[],[] -> c
+							|xs::tail, uxs::utail -> let c' = Constr2.add (Eidcond(xs,1), Eidcond(uxs, 1)) c in
+											loop c' (tail, utail)
+							in
+						let c3 = loop c2 (k,usedenc) in
+						(c1, c3)
 
 let rec convertconstraints c1 c2 tconstrset =
     if (TConstraints.is_empty tconstrset) then

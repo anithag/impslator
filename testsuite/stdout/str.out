@@ -8,5 +8,4 @@ enclave(2,
  y1:= *l1;
 y1:= "hello";
 );
-kill(1);
 kill(2);

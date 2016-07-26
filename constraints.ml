@@ -527,9 +527,9 @@ and get_translated_exp = function
 				     let q = Low in
 				     ELam(mu, gamma,k, pc, setu, gamma', k', q, encs)   
  
-let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = match s with
+let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel usedenclave = match s with
  | Assign (v,e) -> let b = get_exp_type srcgamma e in 
-		 let c1, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
+		 let c1, texp = gen_constraints_exp srcgamma e b mu gamma delta usedenclave in
 		 let gammatmp = get_translated_exp_gamma texp in
 		 let enclt = get_translated_exp_type texp in
 		 let varlabtype = join (pc, (get_enc_exp_label enclt)) in
@@ -546,7 +546,7 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		 let tstmt = TAssign(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, v, texp, gamma', k) in
 		 (c3, tstmt)
  | Declassify (v,e) -> let b = get_exp_type srcgamma e in 
-		 let c1, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
+		 let c1, texp = gen_constraints_exp srcgamma e b mu gamma delta  usedenclave in
 		 let gammatmp = get_translated_exp_gamma texp in
 		 let enclt = get_translated_exp_type texp in
 		 let varlabtype = Low in
@@ -559,11 +559,11 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		 let tstmt = TDeclassify(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, v, texp, gamma', k) in
 		 (c2, tstmt)
  | Update(e1,e2) -> let b1 = get_exp_type srcgamma e1 in 
-		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  usedenclave in
 		 let gammatmp1 = get_translated_exp_gamma texp1 in
 		 let b2 = get_exp_type srcgamma e2 in 
 		 let isarraytype = is_array_type b2 in
-		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gammatmp1 delta  in
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gammatmp1 delta  usedenclave in
 		 let gammatmp2 = get_translated_exp_gamma texp2 in
 		 let ence1 = get_translated_exp texp1 in
 		 let ence2 = get_translated_exp texp2 in
@@ -588,14 +588,17 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 			let rec seqloop c1 mui g genc ki tstmtlist = function
 			| [] -> (c1, g, genc, ki, tstmtlist)
 			| xs::tail -> 
-				    let  c2, tstmt1 = gen_constraints_stmt pc g setu xs mui genc ki delta istoplevel in
+				    let  c2, tstmt1 = gen_constraints_stmt pc g setu xs mui genc ki delta istoplevel usedenclave in
 				    let  g' = get_translated_stmt_src_postgamma tstmt1 in
 				    let genc' = get_translated_stmt_enc_postgamma tstmt1 in
 				    let k' = get_translated_stmt_enc_postkillset tstmt1 in
 				    let k'' = gen_killset () in
+			
+				    (* Get usedenclaves *)
+				    let c2' = TConstraints.add (KillonlyUsedEnclave(k'', usedenclave)) c2 in
 
 				    (* K'' ∩ K ' = Ø *)
-				    let c3 = TConstraints.add (KillIntersectEmpty(k'', k')) c2 in
+				    let c3 = TConstraints.add (KillIntersectEmpty(k'', k')) c2' in
 
 				    let kj  = gen_killset () in
 
@@ -644,14 +647,14 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		     let tseq = TSeq(pc, srcgamma,setu,srcgamma', s,mu,gamma, k, delta, tstmtlist, gamma', k') in
 		     (c'', tseq)
  |If (e, s1, s2) ->let b = get_exp_type srcgamma e in 
-		   let c, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
+		   let c, texp = gen_constraints_exp srcgamma e b mu gamma delta usedenclave in
 		   let encgamma = get_translated_exp_gamma texp in
 		   let mu1 = next_tvar () in
-		   let  c1, tstmt1 = gen_constraints_stmt pc srcgamma setu s1 mu1 encgamma k delta false in
+		   let  c1, tstmt1 = gen_constraints_stmt pc srcgamma setu s1 mu1 encgamma k delta false usedenclave in
 	    	   let k1 = get_translated_stmt_enc_postkillset tstmt1 in
 		   (* let genc1 = get_translated_stmt_enc_postgamma tstmt1 in *)
 		   let mu2 = next_tvar () in
-		   let  c2, tstmt2 = gen_constraints_stmt pc srcgamma setu s2 mu2 encgamma k delta false in
+		   let  c2, tstmt2 = gen_constraints_stmt pc srcgamma setu s2 mu2 encgamma k delta false usedenclave in
 	    	   let k2 = get_translated_stmt_enc_postkillset tstmt2 in
 		   (* let genc2 = get_translated_stmt_enc_postgamma tstmt2 in *)
 		   let ence = get_translated_exp texp in
@@ -686,10 +689,10 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		   let tstmt = TIf(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ence, tstmt1, tstmt2, gamma', k') in
  		   (c12, tstmt)
  |While (e, s1) ->let b = get_exp_type srcgamma e in 
-		   let c, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
+		   let c, texp = gen_constraints_exp srcgamma e b mu gamma delta  usedenclave in
 		   let encgamma = get_translated_exp_gamma texp in
 		   let mu1 = next_tvar () in
-		   let  c1, tstmt1 = gen_constraints_stmt pc srcgamma setu s1 mu1 encgamma k delta false in
+		   let  c1, tstmt1 = gen_constraints_stmt pc srcgamma setu s1 mu1 encgamma k delta false usedenclave in
 	    	   let k1 = get_translated_stmt_enc_postkillset tstmt1 in
 
 		   let ence = get_translated_exp texp in
@@ -717,7 +720,7 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		   let tstmt = TWhile(pc,srcgamma,setu,srcgamma',s,mu,gamma, k, delta, ence, tstmt1, gamma', k1) in
  		   (c8, tstmt)
  |Call(e) 	->let b = get_exp_type srcgamma e in 
-		  let c, texp = gen_constraints_exp srcgamma e b mu gamma delta  in
+		  let c, texp = gen_constraints_exp srcgamma e b mu gamma delta usedenclave  in
 		  let encgamma = get_translated_exp_gamma texp in
 		  let enctype = get_translated_exp_type texp in
 		  let prekill = get_prekillset enctype in
@@ -758,7 +761,7 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		   (c1, tstmt)
  | Output(ell, e) ->
  		 let b = get_exp_type srcgamma e in 
-		 let c1, texp1 = gen_constraints_exp srcgamma e b mu gamma delta  in
+		 let c1, texp1 = gen_constraints_exp srcgamma e b mu gamma delta  usedenclave in
 		 let c2 = TConstraints.add (ModenotKilled (mu, k)) c1 in
 		 let gammatmp1 = get_translated_exp_gamma texp1 in
 		 let ence = get_translated_exp texp1 in
@@ -773,7 +776,7 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel = ma
 		   
  
 
-and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with 
+and gen_constraints_exp srcgamma e srctype mu gamma delta usedenclave = match e with 
    | Var x     ->  
 		    let (enctype, gamma', c) = if (VarLocMap.mem (Reg x) gamma) then 
 		    				(VarLocMap.find (Reg x) gamma, gamma, TConstraints.empty) 
@@ -808,7 +811,7 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		    let rec loop li c = begin match li with
 					|xs::tail -> let e = (Loc xs) in
 						     let srctype = get_exp_type srcgamma e in
-						     let (c', texp)  =	gen_constraints_exp srcgamma e srctype mu gamma delta in
+						     let (c', texp)  =	gen_constraints_exp srcgamma e srctype mu gamma delta usedenclave in
 						     (* Add the constraint that mu' = mu for each array mode *)
 		 				     let enclt = get_translated_exp_type texp in
 		    				     let mu'' = get_mode enclt in
@@ -824,14 +827,14 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 			(c', texp) 
   | Tuple (e1, e2)->
 		 let b1 = get_exp_type srcgamma e1 in 
-		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  usedenclave in
 
 		 (* Translate e1 *)
 		 let ence1 = get_translated_exp texp1 in
 		 let gamma1 = get_translated_exp_gamma texp1 in
 
 		 let b2 = get_exp_type srcgamma e2 in 
-		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  usedenclave in
 
 		 (* Translate e2 *)
 		 let ence2 = get_translated_exp texp2 in
@@ -844,7 +847,7 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		 (TConstraints.union c1 c2, texp)
  | Fst e'	->
 		 let b = get_exp_type srcgamma e' in 
-		 let c, texp = gen_constraints_exp srcgamma e' b mu gamma delta  in
+		 let c, texp = gen_constraints_exp srcgamma e' b mu gamma delta  usedenclave in
 
 		 (* Translate e' *)
 		 let ence' = get_translated_exp texp in
@@ -861,7 +864,7 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		  (c, texp)
  | Snd e'	->  
 		 let b = get_exp_type srcgamma e' in 
-		 let c, texp = gen_constraints_exp srcgamma e' b mu gamma delta  in
+		 let c, texp = gen_constraints_exp srcgamma e' b mu gamma delta  usedenclave in
 
 		 (* Translate e' *)
 		 let ence' = get_translated_exp texp in
@@ -878,14 +881,14 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		  (c, texp)
  |Index (e', idx) -> 
 		    let b = get_exp_type srcgamma e' in 
-		    let c1, texp' = gen_constraints_exp srcgamma e' b mu gamma delta  in
+		    let c1, texp' = gen_constraints_exp srcgamma e' b mu gamma delta usedenclave in
 		    let ence' = get_translated_exp texp' in
 		    let gamma' = get_translated_exp_gamma texp' in
 
 		    let enctype' = get_enc_exp_type gamma' ence' in
 		    let mu' = get_mode enctype' in
 
-		    let c2, tidx = gen_constraints_exp srcgamma idx b mu gamma' delta  in
+		    let c2, tidx = gen_constraints_exp srcgamma idx b mu gamma' delta usedenclave in
 		    let encidx = get_translated_exp tidx in
 		    let gamma'' = get_translated_exp_gamma tidx in
 
@@ -897,7 +900,7 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		    (TConstraints.union c1 c2, texp)
  | Deref e'     ->
 		 let b = get_exp_type srcgamma e' in 
-		 let c1, texp = gen_constraints_exp srcgamma e' b mu gamma delta  in
+		 let c1, texp = gen_constraints_exp srcgamma e' b mu gamma delta  usedenclave in
 
 		 (* Translate e' *)
 		 let ence' = get_translated_exp texp in
@@ -933,7 +936,7 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
  | Lam(gpre, p, u, gpost,q, s) -> 
 		    let (enctype, c) = translatetype srctype in
 		    let (m', gencpre, kpre, p, u, gencpost, kpost) = invert_encfunctype enctype in
-		    let  c1, tstmt = gen_constraints_stmt p gpre u s m' gencpre kpre delta false in
+		    let  c1, tstmt = gen_constraints_stmt p gpre u s m' gencpre kpre delta false usedenclave in
 		    let delta' = get_translated_stmt_delta tstmt in
 		    let texp = TLamExp(srcgamma,e,srctype, mu,gamma,delta',tstmt,enctype) in
 
@@ -950,14 +953,14 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		 
  |Plus (e1, e2) ->
 		 let b1 = get_exp_type srcgamma e1 in 
-		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  usedenclave in
 
 		 (* Translate e1 *)
 		 let ence1 = get_translated_exp texp1 in
 		 let gamma1 = get_translated_exp_gamma texp1 in
 
 		 let b2 = get_exp_type srcgamma e2 in 
-		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  usedenclave in
 
 		 (* Translate e2 *)
 		 let ence2 = get_translated_exp texp2 in
@@ -970,14 +973,14 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		 (TConstraints.union c1 c2, texp)
  |Modulo (e1, e2) ->
 		 let b1 = get_exp_type srcgamma e1 in 
-		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  usedenclave in
 
 		 (* Translate e1 *)
 		 let ence1 = get_translated_exp texp1 in
 		 let gamma1 = get_translated_exp_gamma texp1 in
 
 		 let b2 = get_exp_type srcgamma e2 in 
-		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  usedenclave in
 
 		 (* Translate e2 *)
 		 let ence2 = get_translated_exp texp2 in
@@ -990,14 +993,14 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		 (TConstraints.union c1 c2, texp)
  |Eq (e1, e2) ->
 		 let b1 = get_exp_type srcgamma e1 in 
-		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  usedenclave in
 
 		 (* Translate e1 *)
 		 let ence1 = get_translated_exp texp1 in
 		 let gamma1 = get_translated_exp_gamma texp1 in
 
 		 let b2 = get_exp_type srcgamma e2 in 
-		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  usedenclave in
 
 		 (* Translate e2 *)
 		 let ence2 = get_translated_exp texp2 in
@@ -1010,14 +1013,14 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		 (TConstraints.union c1 c2, texp)
  |Neq (e1, e2) ->
 		 let b1 = get_exp_type srcgamma e1 in 
-		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  usedenclave in
 
 		 (* Translate e1 *)
 		 let ence1 = get_translated_exp texp1 in
 		 let gamma1 = get_translated_exp_gamma texp1 in
 
 		 let b2 = get_exp_type srcgamma e2 in 
-		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  usedenclave in
 
 		 (* Translate e2 *)
 		 let ence2 = get_translated_exp texp2 in
@@ -1030,14 +1033,14 @@ and gen_constraints_exp srcgamma e srctype mu gamma delta= match e with
 		 (TConstraints.union c1 c2, texp)
  |Lt (e1, e2) ->
 		 let b1 = get_exp_type srcgamma e1 in 
-		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  in
+		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta usedenclave in
 
 		 (* Translate e1 *)
 		 let ence1 = get_translated_exp texp1 in
 		 let gamma1 = get_translated_exp_gamma texp1 in
 
 		 let b2 = get_exp_type srcgamma e2 in 
-		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  in
+		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gamma1 delta  usedenclave in
 
 		 (* Translate e2 *)
 		 let ence2 = get_translated_exp texp2 in
