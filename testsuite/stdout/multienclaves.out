@@ -1,0 +1,23 @@
+
+ (# Enclave Type Declarations #)
+cnd1: cond^(0, -1)_low;
+cnd2: cond^(0, -1)_low;
+status: int_low;
+l1: int_high^(1, 1) ref_low;
+l2: int_high /cnd1 T^(1, 1) ref_low;
+l3: int_high^(1, 2) ref_low;
+l4: int_high /cnd2 T^(1, 2) ref_low;
+
+ (# Enclave Program #)
+enclave(1, 
+ status:= declassify(*l1 == *l2);
+);
+kill(1);
+set(cnd1);
+Output status to L ;
+enclave(2, 
+ status:= declassify(*l3 == *l4);
+);
+kill(2);
+set(cnd2);
+Output status to L ;

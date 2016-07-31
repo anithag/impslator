@@ -1,0 +1,24 @@
+
+(# Example to demonstrate choosing different enclaves for
+  operations on disjoint data sets
+#)
+l1: int_high ref_low; 
+l2: int_high~top,cnd1 ref_low; 
+
+(# operations on l3 and l4 do not use l1 and l2.
+   The hope is that they can be placed in a different 
+   enclave reducing the window of vulnerability
+#)
+l3: int_high ref_low; 
+l4: int_high~top,cnd2 ref_low; 
+status: int_low;
+cnd1:cond_low;
+cnd2:cond_low
+
+status := declassify((*l1) == (*l2));
+set(cnd1);
+output(L, status);
+
+status := declassify((*l3) == (*l4));
+set(cnd2);
+output(L, status);

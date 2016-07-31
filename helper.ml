@@ -23,6 +23,7 @@ let get_mode = function
 | EBtRef(mu', lt), p -> mu'
 | EBtArray(mu',_,_), p -> mu'
 | EBtFunc(mu', _,_,p,u,_,_), q -> mu'
+| EBtCond mu', p -> mu'
 | _, q ->raise (HelperError "Type has no mode") 
 
 let get_mode_var = function

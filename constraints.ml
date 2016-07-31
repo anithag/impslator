@@ -562,7 +562,6 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel used
 		 let c1, texp1 = gen_constraints_exp srcgamma e1 b1 mu gamma delta  usedenclave in
 		 let gammatmp1 = get_translated_exp_gamma texp1 in
 		 let b2 = get_exp_type srcgamma e2 in 
-		 let isarraytype = is_array_type b2 in
 		 let c2, texp2 = gen_constraints_exp srcgamma e2 b2 mu gammatmp1 delta  usedenclave in
 		 let gammatmp2 = get_translated_exp_gamma texp2 in
 		 let ence1 = get_translated_exp texp1 in
@@ -756,9 +755,13 @@ let rec gen_constraints_stmt pc srcgamma setu s mu gamma k delta istoplevel used
 		  let c1 = TConstraints.add (ModenotKilled (mu, k)) TConstraints.empty in
 		   (c1, tstmt)
  | Set x 	-> 
-		  let tstmt = TSetcnd(pc,srcgamma,setu,srcgamma,s,mu,gamma, k, delta, x, gamma, k) in
 		  let c1 = TConstraints.add (ModenotKilled (mu, k)) TConstraints.empty in
-		   (c1, tstmt)
+		  let encb1 = get_enc_exp_type gamma (EVar x) in 
+		  let mu' = get_mode encb1 in 
+		  (* μ' ≠ N => μ' = μ *)
+		  let c2 = TConstraints.add  (ModenotNimpliesEq (mu', mu)) c1 in
+		  let tstmt = TSetcnd(pc,srcgamma,setu,srcgamma,s,mu,gamma, k, delta, x, gamma, k) in
+		   (c2, tstmt)
  | Output(ell, e) ->
  		 let b = get_exp_type srcgamma e in 
 		 let c1, texp1 = gen_constraints_exp srcgamma e b mu gamma delta  usedenclave in
